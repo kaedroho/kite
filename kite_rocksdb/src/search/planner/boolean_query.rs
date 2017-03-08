@@ -7,7 +7,7 @@ use kite::Query;
 use RocksDBIndexReader;
 
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum BooleanQueryOp {
     PushEmpty,
     PushFull,
@@ -410,5 +410,290 @@ pub fn plan_boolean_query(index_reader: &RocksDBIndexReader, mut builder: &mut B
             plan_boolean_query(index_reader, &mut builder, exclude);
             builder.andnot_combinator();
         }
+    }
+}
+
+
+#[cfg(test)]
+mod builder_tests {
+    use kite::schema::FieldRef;
+    use kite::term::TermRef;
+
+    use super::BooleanQueryOp;
+    use super::BooleanQueryBuilder;
+
+    #[test]
+    fn test_push_empty() {
+        let mut builder = BooleanQueryBuilder::new();
+
+        builder.push_empty();
+
+        let (query, negated) = builder.build();
+
+        assert_eq!(query, vec![
+            BooleanQueryOp::PushEmpty,
+        ]);
+        assert_eq!(negated, false);
+    }
+
+    #[test]
+    fn test_push_full() {
+        let mut builder = BooleanQueryBuilder::new();
+
+        builder.push_full();
+
+        let (query, negated) = builder.build();
+
+        assert_eq!(query, vec![
+            BooleanQueryOp::PushFull,
+        ]);
+        assert_eq!(negated, false);
+    }
+
+    #[test]
+    fn test_push_term_directory() {
+        let mut builder = BooleanQueryBuilder::new();
+
+        builder.push_term_directory(FieldRef::new(1), TermRef::new(1));
+
+        let (query, negated) = builder.build();
+
+        assert_eq!(query, vec![
+            BooleanQueryOp::PushTermDirectory(FieldRef::new(1), TermRef::new(1)),
+        ]);
+        assert_eq!(negated, false);
+    }
+
+    #[test]
+    fn test_push_deletion_list() {
+        let mut builder = BooleanQueryBuilder::new();
+
+        builder.push_deletion_list();
+
+        let (query, negated) = builder.build();
+
+        assert_eq!(query, vec![
+            BooleanQueryOp::PushDeletionList,
+        ]);
+        assert_eq!(negated, false);
+    }
+
+    #[test]
+    fn test_and_combinator() {
+        let mut builder = BooleanQueryBuilder::new();
+
+        builder.push_term_directory(FieldRef::new(1), TermRef::new(1));
+        builder.push_term_directory(FieldRef::new(1), TermRef::new(2));
+        builder.and_combinator();
+
+        let (query, negated) = builder.build();
+
+        assert_eq!(query, vec![
+            BooleanQueryOp::PushTermDirectory(FieldRef::new(1), TermRef::new(1)),
+            BooleanQueryOp::PushTermDirectory(FieldRef::new(1), TermRef::new(2)),
+            BooleanQueryOp::And,
+        ]);
+        assert_eq!(negated, false);
+    }
+
+    #[test]
+    fn test_or_combinator() {
+        let mut builder = BooleanQueryBuilder::new();
+
+        builder.push_term_directory(FieldRef::new(1), TermRef::new(1));
+        builder.push_term_directory(FieldRef::new(1), TermRef::new(2));
+        builder.or_combinator();
+
+        let (query, negated) = builder.build();
+
+        assert_eq!(query, vec![
+            BooleanQueryOp::PushTermDirectory(FieldRef::new(1), TermRef::new(1)),
+            BooleanQueryOp::PushTermDirectory(FieldRef::new(1), TermRef::new(2)),
+            BooleanQueryOp::Or,
+        ]);
+        assert_eq!(negated, false);
+    }
+
+    #[test]
+    fn test_andnot_combinator() {
+        let mut builder = BooleanQueryBuilder::new();
+
+        builder.push_term_directory(FieldRef::new(1), TermRef::new(1));
+        builder.push_term_directory(FieldRef::new(1), TermRef::new(2));
+        builder.andnot_combinator();
+
+        let (query, negated) = builder.build();
+
+        assert_eq!(query, vec![
+            BooleanQueryOp::PushTermDirectory(FieldRef::new(1), TermRef::new(1)),
+            BooleanQueryOp::PushTermDirectory(FieldRef::new(1), TermRef::new(2)),
+            BooleanQueryOp::AndNot,
+        ]);
+        assert_eq!(negated, false);
+    }
+
+    #[test]
+    fn test_push_full_with_or_combinator() {
+        // If one of the operands to an or combinator is full, the or combinator should be replaced with full
+        let mut builder = BooleanQueryBuilder::new();
+
+        builder.push_full();
+        builder.push_term_directory(FieldRef::new(1), TermRef::new(2));
+        builder.or_combinator();
+
+        let (query, negated) = builder.build();
+
+        assert_eq!(query, vec![
+            BooleanQueryOp::PushFull,
+        ]);
+        assert_eq!(negated, false);
+    }
+
+    #[test]
+    fn test_push_empty_with_or_combinator() {
+        // If one of the operands to an or combinator is empty, the or combinator should be replaced with the other operand
+        let mut builder = BooleanQueryBuilder::new();
+
+        builder.push_empty();
+        builder.push_term_directory(FieldRef::new(1), TermRef::new(2));
+        builder.or_combinator();
+
+        let (query, negated) = builder.build();
+
+        assert_eq!(query, vec![
+            BooleanQueryOp::PushTermDirectory(FieldRef::new(1), TermRef::new(2)),
+        ]);
+        assert_eq!(negated, false);
+    }
+
+    #[test]
+    fn test_push_full_with_and_combinator() {
+        // If one of the operands to an and combinator is full, the and combinator should be replaced with the other operand
+        let mut builder = BooleanQueryBuilder::new();
+
+        builder.push_full();
+        builder.push_term_directory(FieldRef::new(1), TermRef::new(2));
+        builder.and_combinator();
+
+        let (query, negated) = builder.build();
+
+        assert_eq!(query, vec![
+            BooleanQueryOp::PushTermDirectory(FieldRef::new(1), TermRef::new(2)),
+        ]);
+        assert_eq!(negated, false);
+    }
+
+    #[test]
+    fn test_push_empty_with_and_combinator() {
+        // If one of the operands to an and combinator is empty, the and combinator should be replaced with empty
+        let mut builder = BooleanQueryBuilder::new();
+
+        builder.push_empty();
+        builder.push_term_directory(FieldRef::new(1), TermRef::new(2));
+        builder.and_combinator();
+
+        let (query, negated) = builder.build();
+
+        assert_eq!(query, vec![
+            BooleanQueryOp::PushEmpty,
+        ]);
+        assert_eq!(negated, false);
+    }
+
+    #[test]
+    fn test_push_full_to_left_of_andnot_operator() {
+        // If the left operand to the andnot operator is full, the andnot combinator should be replaced with the right operand and the whole query should be negated
+        // (basically: we're filtering a full set. This is effectively a NOT query)
+        let mut builder = BooleanQueryBuilder::new();
+
+        builder.push_full();
+        builder.push_term_directory(FieldRef::new(1), TermRef::new(2));
+        builder.andnot_combinator();
+
+        let (query, negated) = builder.build();
+
+        assert_eq!(query, vec![
+            BooleanQueryOp::PushTermDirectory(FieldRef::new(1), TermRef::new(2)),
+        ]);
+        assert_eq!(negated, true);
+    }
+
+    #[test]
+    fn test_push_empty_to_left_of_andnot_operator() {
+        // If the left operand to the andnot operator is empty, the andnot combinator should be replaced with empty
+        // (basically: we're filtering an empty set)
+        let mut builder = BooleanQueryBuilder::new();
+
+        builder.push_empty();
+        builder.push_term_directory(FieldRef::new(1), TermRef::new(2));
+        builder.andnot_combinator();
+
+        let (query, negated) = builder.build();
+
+        assert_eq!(query, vec![
+            BooleanQueryOp::PushEmpty,
+        ]);
+        assert_eq!(negated, false);
+    }
+
+    #[test]
+    fn test_push_full_to_right_of_andnot_operator() {
+        // If the right operand to the andnot operator is full, the andnot combinator should be replaced with empty
+        // (basically: we're filtering a set by a full set, so there can't be anything left)
+        let mut builder = BooleanQueryBuilder::new();
+
+        builder.push_term_directory(FieldRef::new(1), TermRef::new(2));
+        builder.push_full();
+        builder.andnot_combinator();
+
+        let (query, negated) = builder.build();
+
+        assert_eq!(query, vec![
+            BooleanQueryOp::PushEmpty,
+        ]);
+        assert_eq!(negated, false);
+    }
+
+    #[test]
+    fn test_push_empty_to_right_of_andnot_operator() {
+        // If the right operand to the andnot operator is empty, the andnot combinator should be replaced with the left operand
+        // (basically: we're filtering a set by an empty set, leaving the set untouched)
+        let mut builder = BooleanQueryBuilder::new();
+
+        builder.push_term_directory(FieldRef::new(1), TermRef::new(2));
+        builder.push_empty();
+        builder.andnot_combinator();
+
+        let (query, negated) = builder.build();
+
+        assert_eq!(query, vec![
+            BooleanQueryOp::PushTermDirectory(FieldRef::new(1), TermRef::new(2)),
+        ]);
+        assert_eq!(negated, false);
+    }
+
+    #[test]
+    fn test_complex_query() {
+        // There's a lot going on here. This checks that a complex query gets optimised as much as possible
+        let mut builder = BooleanQueryBuilder::new();
+
+        // (ALL NOT TD(1, 2)) OR (TD(1,1) AND (TD(1, 3) AND NOT ALL))
+        builder.push_full();
+        builder.push_term_directory(FieldRef::new(1), TermRef::new(2));
+        builder.andnot_combinator();
+        builder.push_term_directory(FieldRef::new(1), TermRef::new(1));
+        builder.push_term_directory(FieldRef::new(1), TermRef::new(3));
+        builder.push_full();
+        builder.andnot_combinator();
+        builder.and_combinator();
+        builder.or_combinator();
+
+        let (query, negated) = builder.build();
+
+        // Should be optimised down to just "NOT TD(1, 2)"
+        assert_eq!(query, vec![
+            BooleanQueryOp::PushTermDirectory(FieldRef::new(1), TermRef::new(2)),
+        ]);
+        assert_eq!(negated, true);
     }
 }
