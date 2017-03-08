@@ -87,6 +87,10 @@ pub struct FieldRef(u32);
 
 
 impl FieldRef {
+    pub fn new(ord: u32) -> FieldRef {
+        FieldRef(ord)
+    }
+
     pub fn ord(&self) -> u32 {
         self.0
     }
