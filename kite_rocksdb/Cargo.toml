@@ -5,7 +5,7 @@ authors = ["Karl Hobley <karlhobley10@gmail.com>"]
 
 [dependencies]
 rocksdb = { git = "https://github.com/spacejam/rust-rocksdb.git", rev = "68c13ea" }
-rustc-serialize = "0.3"
+serde_json = "0.9"
 byteorder = "0.5"
 chrono = "0.2"
 

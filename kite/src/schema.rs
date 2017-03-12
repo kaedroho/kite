@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 use std::ops::Deref;
+use std::fmt;
 
-use rustc_serialize::{Encodable, Decodable, Encoder, Decoder};
+use serde::{Serialize, Deserialize, Serializer, Deserializer};
 
 
 bitflags! {
@@ -12,8 +13,10 @@ bitflags! {
 }
 
 
-impl Encodable for FieldFlags {
-    fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
+impl Serialize for FieldFlags {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where S: Serializer
+    {
         let mut flag_strings = Vec::new();
 
         if self.contains(FIELD_INDEXED) {
@@ -24,36 +27,53 @@ impl Encodable for FieldFlags {
             flag_strings.push("STORED");
         }
 
-        try!(s.emit_str(&flag_strings.join("|")));
-
-        Ok(())
+        serializer.serialize_str(&flag_strings.join("|"))
     }
 }
 
-impl Decodable for FieldFlags {
-    fn decode<D: Decoder>(d: &mut D) -> Result<FieldFlags, D::Error> {
-        let s = try!(d.read_str());
-        let mut flags = FieldFlags::empty();
 
-        for flag_s in s.split("|") {
-            match flag_s {
-                "INDEXED" => {
-                    flags |= FIELD_INDEXED;
+impl Deserialize for FieldFlags {
+    fn deserialize<D>(deserializer: D) -> Result<FieldFlags, D::Error>
+        where D: Deserializer
+    {
+        struct Visitor;
+
+        impl ::serde::de::Visitor for Visitor {
+            type Value = FieldFlags;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("a string of flag names separated by a '|' character")
+            }
+
+            fn visit_str<E>(self, value: &str) -> Result<FieldFlags, E>
+                where E: ::serde::de::Error
+            {
+                let mut flags = FieldFlags::empty();
+
+                for flag_s in value.split("|") {
+                    match flag_s {
+                        "INDEXED" => {
+                            flags |= FIELD_INDEXED;
+                        }
+                        "STORED" => {
+                            flags |= FIELD_STORED;
+                        }
+                        _ => {} // TODO: error
+                    }
                 }
-                "STORED" => {
-                    flags |= FIELD_STORED;
-                }
-                _ => {} // TODO: error
+
+                Ok(flags)
             }
         }
 
-
-        Ok(flags)
+        deserializer.deserialize_str(Visitor)
     }
 }
 
 
-#[derive(Debug, Clone, PartialEq, RustcEncodable, RustcDecodable)]
+
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum FieldType {
     Text,
     PlainString,
@@ -63,7 +83,7 @@ pub enum FieldType {
 }
 
 
-#[derive(Debug, Clone, RustcEncodable, RustcDecodable)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FieldInfo {
     name: String,
     pub field_type: FieldType,
@@ -82,7 +102,7 @@ impl FieldInfo {
 }
 
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub struct FieldRef(u32);
 
 
@@ -96,19 +116,24 @@ impl FieldRef {
     }
 }
 
-
-impl Encodable for FieldRef {
-    fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
-        s.emit_u32(self.ord())
+/*
+impl Serialize for FieldRef {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where S: Serializer
+    {
+        serializer.serialize_i32(self.ord);
     }
 }
 
-impl Decodable for FieldRef {
-    fn decode<D: Decoder>(d: &mut D) -> Result<FieldRef, D::Error> {
-        Ok(FieldRef(try!(d.read_u32())))
+
+impl Deserialize for FieldRef {
+    fn deserialize<D>(deserializer: D) -> Result<FieldRef, D::Error>
+        where D: Deserializer
+    {
+        Ok(FieldRef(try!(deserializer.deserialize_i32())))
     }
 }
-
+*/
 
 #[derive(Debug)]
 pub enum AddFieldError {
@@ -116,7 +141,7 @@ pub enum AddFieldError {
 }
 
 
-#[derive(Debug, Clone, RustcEncodable, RustcDecodable)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Schema {
     next_field_id: u32,
     fields: HashMap<FieldRef, FieldInfo>,

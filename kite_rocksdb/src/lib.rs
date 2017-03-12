@@ -1,6 +1,6 @@
 extern crate kite;
 extern crate rocksdb;
-extern crate rustc_serialize;
+extern crate serde_json;
 extern crate byteorder;
 extern crate chrono;
 #[cfg(test)]
@@ -27,7 +27,6 @@ use rocksdb::{DB, WriteBatch, Options, MergeOperands, Snapshot};
 use kite::{Document, DocRef, TermRef};
 use kite::document::FieldValue;
 use kite::schema::{Schema, FieldType, FieldFlags, FieldRef, AddFieldError};
-use rustc_serialize::json;
 use byteorder::{ByteOrder, BigEndian};
 use chrono::{NaiveDateTime, DateTime, UTC};
 
@@ -136,7 +135,7 @@ impl RocksDBIndexStore {
 
         // Schema
         let schema = Schema::new();
-        let schema_encoded = match json::encode(&schema) {
+        let schema_encoded = match serde_json::to_string(&schema) {
             Ok(schema_encoded) => schema_encoded,
             Err(e) => return Err(format!("schema encode error: {:?}", e).into()),
         };
@@ -168,7 +167,7 @@ impl RocksDBIndexStore {
         let schema = match try!(db.get(b".schema")) {
             Some(schema) => {
                 let schema = schema.to_utf8().unwrap().to_string();
-                match json::decode(&schema) {
+                match serde_json::from_str(&schema) {
                     Ok(schema) => schema,
                     Err(e) => return Err(format!("schema parse error: {:?}", e).into()),
                 }
@@ -204,7 +203,7 @@ impl RocksDBIndexStore {
         self.schema = Arc::new(schema_copy);
 
         // FIXME: How do we throw this error?
-        self.db.put(b".schema", json::encode(&self.schema).unwrap().as_bytes()).unwrap();
+        self.db.put(b".schema", serde_json::to_string(&self.schema).unwrap().as_bytes()).unwrap();
 
         Ok(field_ref)
     }
@@ -217,7 +216,7 @@ impl RocksDBIndexStore {
             self.schema = Arc::new(schema_copy);
 
             // FIXME: How do we throw this error?
-            self.db.put(b".schema", json::encode(&self.schema).unwrap().as_bytes()).unwrap();
+            self.db.put(b".schema", serde_json::to_string(&self.schema).unwrap().as_bytes()).unwrap();
         }
 
         field_removed

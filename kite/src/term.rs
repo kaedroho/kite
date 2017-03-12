@@ -1,4 +1,3 @@
-use rustc_serialize::json::Json;
 use chrono::{DateTime, UTC, Timelike};
 use byteorder::{WriteBytesExt, BigEndian};
 
@@ -23,20 +22,6 @@ pub struct Term(Vec<u8>);
 
 
 impl Term {
-    pub fn from_json(json: &Json) -> Option<Term> {
-        // TODO: Should be aware of mappings
-        match *json {
-            Json::String(ref string) => Some(Term::from_string(string)),
-            Json::Boolean(value) => Some(Term::from_boolean(value)),
-            Json::F64(_) => None,
-            Json::I64(value) => Some(Term::from_integer(value)),
-            Json::U64(value) => Some(Term::from_integer(value as i64)),  // FIXME
-            Json::Null => None,
-            Json::Array(_) => None,
-            Json::Object(_) => None,
-        }
-    }
-
     pub fn from_bytes(bytes: &[u8]) -> Term {
         Term(bytes.to_vec())
     }
