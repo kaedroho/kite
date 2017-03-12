@@ -88,7 +88,7 @@ mod tests {
     fn test_blank_string_to_bytes() {
         let term = Term::from_string("");
 
-        assert_eq!(term.as_bytes().to_vec(), vec![])
+        assert_eq!(term.as_bytes().to_vec(), vec![] as Vec<u8>)
     }
 
     #[test]
