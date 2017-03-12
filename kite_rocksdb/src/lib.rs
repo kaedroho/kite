@@ -420,8 +420,9 @@ impl<'a> RocksDBIndexReader<'a> {
 #[cfg(test)]
 mod tests {
     use std::fs::remove_dir_all;
+    use std::path::Path;
 
-    use rocksdb::{DB, Options};
+    use rocksdb::DB;
     use kite::{Term, Token, Document};
     use kite::document::FieldValue;
     use kite::schema::{FieldType, FIELD_INDEXED, FIELD_STORED};
@@ -431,9 +432,16 @@ mod tests {
 
     use super::RocksDBIndexStore;
 
+    fn remove_dir_all_ignore_error<P: AsRef<Path>>(path: P) {
+        match remove_dir_all(&path) {
+            Ok(_) => {}
+            Err(_) => {}  // Don't care if this fails
+        }
+    }
+
     #[test]
     fn test_create() {
-        remove_dir_all("test_indices/test_create");
+        remove_dir_all_ignore_error("test_indices/test_create");
 
         let store = RocksDBIndexStore::create("test_indices/test_create");
         assert!(store.is_ok());
@@ -441,14 +449,14 @@ mod tests {
 
     #[test]
     fn test_open() {
-        remove_dir_all("test_indices/test_open");
+        remove_dir_all_ignore_error("test_indices/test_open");
 
         // Check that it fails to open a DB which doesn't exist
         let store = RocksDBIndexStore::open("test_indices/test_open");
         assert!(store.is_err());
 
         // Create the DB
-        RocksDBIndexStore::create("test_indices/test_open");
+        RocksDBIndexStore::create("test_indices/test_open").expect("failed to create test DB");
 
         // Now try and open it
         let store = RocksDBIndexStore::open("test_indices/test_open");
@@ -532,7 +540,7 @@ mod tests {
 
     #[test]
     fn test() {
-        remove_dir_all("test_indices/test");
+        remove_dir_all_ignore_error("test_indices/test");
 
         make_test_store("test_indices/test");
 
