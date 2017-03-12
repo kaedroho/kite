@@ -59,9 +59,9 @@ impl RocksDBIndexStore {
         let mut current_td_key: Option<(u32, u32)> = None;
         let mut current_td = Vec::new();
 
-        let mut iter = self.db.iterator();
+        let mut iter = self.db.raw_iterator();
         iter.seek(b"d");
-        while iter.next() {
+        while iter.valid() {
             let k = iter.key().unwrap();
 
             if k[0] != b'd' {
@@ -84,13 +84,15 @@ impl RocksDBIndexStore {
                 }
 
                 // Merge term directory into the new one (and remap the doc ids)
-                let doc_id_set = DocIdSet::from_bytes(iter.value().unwrap().to_vec());
+                let doc_id_set = DocIdSet::from_bytes(iter.value().unwrap());
                 for doc_id in doc_id_set.iter() {
                     let doc_ref = DocRef::from_segment_ord(segment, doc_id);
                     let new_doc_id = doc_ref_mapping.get(&doc_ref).unwrap();
                     current_td.write_u16::<BigEndian>(*new_doc_id).unwrap();
                 }
             }
+
+            iter.next();
         }
 
         // All done, write the last term directory
@@ -119,9 +121,9 @@ impl RocksDBIndexStore {
 
         for source_segment in source_segments.iter() {
             let kb = KeyBuilder::segment_stored_values_prefix(*source_segment);
-            let mut iter = self.db.iterator();
+            let mut iter = self.db.raw_iterator();
             iter.seek(&kb.key());
-            while iter.next() {
+            while iter.valid() {
                 let k = iter.key().unwrap();
 
                 if k[0] != b'v' {
@@ -142,7 +144,9 @@ impl RocksDBIndexStore {
 
                 // Write value into new segment
                 let kb = KeyBuilder::stored_field_value(dest_segment, *new_doc_id, field, &value_type);
-                try!(self.db.put_opt(&kb.key(), &iter.value().unwrap(), &write_options));
+                try!(self.db.put_opt(&kb.key(), unsafe { &iter.value_inner().unwrap() }, &write_options));
+
+                iter.next();
             }
         }
 
@@ -164,10 +168,11 @@ impl RocksDBIndexStore {
         // Fetch and merge statistics
         for source_segment in source_segments.iter() {
             let kb = KeyBuilder::segment_stat_prefix(*source_segment);
-            let mut iter = self.db.iterator();
+            let mut iter = self.db.raw_iterator();
             iter.seek(&kb.key());
-            while iter.next() {
+            while iter.valid() {
                 let k = iter.key().unwrap();
+
                 if k[0] != b's' {
                     // No more statistics to merge
                     break;
@@ -182,7 +187,9 @@ impl RocksDBIndexStore {
 
 
                 let mut stat = statistics.entry(statistic_name).or_insert(0);
-                *stat += BigEndian::read_i64(&iter.value().unwrap());
+                *stat += BigEndian::read_i64(unsafe { &iter.value_inner().unwrap() });
+
+                iter.next();
             }
         }
 
@@ -293,9 +300,9 @@ impl RocksDBIndexStore {
             (nums_iter.next().unwrap(), nums_iter.next().unwrap(), nums_iter.next().unwrap())
         }
 
-        let mut iter = self.db.iterator();
+        let mut iter = self.db.raw_iterator();
         iter.seek(b"d");
-        while iter.next() {
+        while iter.valid() {
             let k = iter.key().unwrap();
 
             if k[0] != b'd' {
@@ -308,6 +315,8 @@ impl RocksDBIndexStore {
             if segments_btree.contains(&segment) {
                 try!(self.db.delete(&k));
             }
+
+            iter.next();
         }
 
 
@@ -326,9 +335,9 @@ impl RocksDBIndexStore {
 
         for source_segment in segments.iter() {
             let kb = KeyBuilder::segment_stored_values_prefix(*source_segment);
-            let mut iter = self.db.iterator();
+            let mut iter = self.db.raw_iterator();
             iter.seek(&kb.key());
-            while iter.next() {
+            while iter.valid() {
                 let k = iter.key().unwrap();
 
                 if k[0] != b'v' {
@@ -344,6 +353,8 @@ impl RocksDBIndexStore {
                 }
 
                 try!(self.db.delete_opt(&k, &write_options));
+
+                iter.next();
             }
         }
 
@@ -360,9 +371,9 @@ impl RocksDBIndexStore {
 
         for source_segment in segments.iter() {
             let kb = KeyBuilder::segment_stat_prefix(*source_segment);
-            let mut iter = self.db.iterator();
+            let mut iter = self.db.raw_iterator();
             iter.seek(&kb.key());
-            while iter.next() {
+            while iter.valid() {
                 let k = iter.key().unwrap();
 
                 if k[0] != b's' {
@@ -378,6 +389,8 @@ impl RocksDBIndexStore {
                 }
 
                 try!(self.db.delete_opt(&k, &write_options));
+
+                iter.next();
             }
         }
 

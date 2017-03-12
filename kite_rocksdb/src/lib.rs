@@ -522,9 +522,12 @@ mod tests {
             string
         }
 
-        let mut iter = db.iterator();
-        while iter.next() {
+        let mut iter = db.raw_iterator();
+        iter.seek_to_first();
+        while iter.valid() {
             println!("{} = {:?}", bytes_to_string(&iter.key().unwrap()), iter.value().unwrap());
+
+            iter.next();
         }
     }
 

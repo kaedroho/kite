@@ -28,9 +28,9 @@ impl DocumentIndexManager {
     pub fn open(db: &DB) -> Result<DocumentIndexManager, rocksdb::Error> {
         // Read primary key index
         let mut primary_key_index = BTreeMap::new();
-        let mut iter = db.iterator();
+        let mut iter = db.raw_iterator();
         iter.seek(b"k");
-        while iter.next() {
+        while iter.valid() {
             let k = iter.key().unwrap();
 
             if k[0] != b'k' {
@@ -43,6 +43,8 @@ impl DocumentIndexManager {
             let doc_ref = DocRef::from_segment_ord(segment, ord);
 
             primary_key_index.insert(k[1..].to_vec(), doc_ref);
+
+            iter.next();
         }
 
         Ok(DocumentIndexManager {

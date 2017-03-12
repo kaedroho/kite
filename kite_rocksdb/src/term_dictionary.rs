@@ -49,17 +49,19 @@ impl TermDictionaryManager {
 
         // Read dictionary
         let mut terms = BTreeMap::new();
-        let mut iter = db.iterator();
+        let mut iter = db.raw_iterator();
         iter.seek(b"t");
-        while iter.next() {
+        while iter.valid() {
             let k = iter.key().unwrap();
 
             if k[0] != b't' {
                 break;
             }
 
-            let term_ref = TermRef::new(str::from_utf8(&iter.value().unwrap()).unwrap().parse::<u32>().unwrap());
+            let term_ref = TermRef::new(str::from_utf8(unsafe { &iter.value_inner().unwrap() }).unwrap().parse::<u32>().unwrap());
             terms.insert(Term::from_bytes(&k[1..]), term_ref);
+
+            iter.next();
         }
 
         Ok(TermDictionaryManager {

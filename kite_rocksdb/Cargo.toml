@@ -4,7 +4,7 @@ version = "0.0.1"
 authors = ["Karl Hobley <karlhobley10@gmail.com>"]
 
 [dependencies]
-rocksdb = { git = "https://github.com/kaedroho/rust-rocksdb.git", rev = "c6e75b3" }
+rocksdb = { git = "https://github.com/spacejam/rust-rocksdb.git", rev = "68c13ea" }
 rustc-serialize = "0.3"
 byteorder = "0.5"
 chrono = "0.2"
