@@ -2,6 +2,8 @@
 name = "kite_rocksdb"
 version = "0.1.0"
 authors = ["Karl Hobley <karlhobley10@gmail.com>"]
+description = "RocksDB storage for Kite search engine"
+license = "Apache-2.0"
 
 [dependencies]
 rocksdb = "0.6.1"
