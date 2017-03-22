@@ -116,24 +116,6 @@ impl FieldRef {
     }
 }
 
-/*
-impl Serialize for FieldRef {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer
-    {
-        serializer.serialize_i32(self.ord);
-    }
-}
-
-
-impl Deserialize for FieldRef {
-    fn deserialize<D>(deserializer: D) -> Result<FieldRef, D::Error>
-        where D: Deserializer
-    {
-        Ok(FieldRef(try!(deserializer.deserialize_i32())))
-    }
-}
-*/
 
 #[derive(Debug)]
 pub enum AddFieldError {
