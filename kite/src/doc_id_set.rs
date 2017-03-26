@@ -1,19 +1,19 @@
 use std::fmt;
 use std::io::{Cursor, Read};
 
-use roaring::{RoaringBitmap, Iter as RoaringBitmapIter};
+use roaring::bitmap::{RoaringBitmap, Iter as RoaringBitmapIter};
 use byteorder::{ByteOrder, BigEndian};
 
 
 #[derive(Clone)]
 pub struct DocIdSet {
-    data: RoaringBitmap<u16>,
+    data: RoaringBitmap,
 }
 
 
 impl DocIdSet {
     pub fn new_filled(mut num_docs: u32) -> DocIdSet {
-        let mut data: RoaringBitmap<u16> = RoaringBitmap::new();
+        let mut data: RoaringBitmap = RoaringBitmap::new();
 
         // Cap num_docs to 65536
         // Note: we cannot simply make num_docs a u16 as 65536 is a valid length
@@ -23,7 +23,7 @@ impl DocIdSet {
 
         for doc_id in 0..num_docs {
             // Note: As num_docs is limited to 65536, doc_id cannot be greater than 65535
-            data.insert(doc_id as u16);
+            data.insert(doc_id);
         }
 
         DocIdSet {
@@ -32,7 +32,7 @@ impl DocIdSet {
     }
 
     pub fn from_bytes(data: Vec<u8>) -> DocIdSet {
-        let mut roaring_data: RoaringBitmap<u16> = RoaringBitmap::new();
+        let mut roaring_data: RoaringBitmap = RoaringBitmap::new();
         let mut cursor = Cursor::new(data);
 
         loop {
@@ -40,7 +40,7 @@ impl DocIdSet {
             match cursor.read_exact(&mut buf) {
                 Ok(()) => {
                     let doc_id = BigEndian::read_u16(&buf);
-                    roaring_data.insert(doc_id);
+                    roaring_data.insert(doc_id as u32);
                 }
                 Err(_) => break,
             }
@@ -58,11 +58,11 @@ impl DocIdSet {
     }
 
     pub fn contains_doc(&self, doc_id: u16) -> bool {
-        self.data.contains(doc_id)
+        self.data.contains(doc_id as u32)
     }
 
     pub fn union(&self, other: &DocIdSet) -> DocIdSet {
-        let mut data: RoaringBitmap<u16> = self.data.clone();
+        let mut data: RoaringBitmap = self.data.clone();
         data.union_with(&other.data);
 
         DocIdSet {
@@ -71,7 +71,7 @@ impl DocIdSet {
     }
 
     pub fn intersection(&self, other: &DocIdSet) -> DocIdSet {
-        let mut data: RoaringBitmap<u16> = self.data.clone();
+        let mut data: RoaringBitmap = self.data.clone();
         data.intersect_with(&other.data);
 
         DocIdSet {
@@ -80,7 +80,7 @@ impl DocIdSet {
     }
 
     pub fn exclusion(&self, other: &DocIdSet) -> DocIdSet {
-        let mut data: RoaringBitmap<u16> = self.data.clone();
+        let mut data: RoaringBitmap = self.data.clone();
         data.difference_with(&other.data);
 
         DocIdSet {
@@ -111,7 +111,7 @@ impl fmt::Debug for DocIdSet {
 
 
 pub struct DocIdSetIterator<'a> {
-    inner: RoaringBitmapIter<'a, u16>,
+    inner: RoaringBitmapIter<'a>,
 }
 
 
@@ -119,6 +119,6 @@ impl<'a> Iterator for DocIdSetIterator<'a> {
     type Item = u16;
 
     fn next(&mut self) -> Option<u16> {
-        self.inner.next()
+        self.inner.next().map(|v| v as u16)
     }
 }
