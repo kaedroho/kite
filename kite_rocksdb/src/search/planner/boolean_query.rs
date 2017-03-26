@@ -10,7 +10,6 @@ use RocksDBIndexReader;
 #[derive(Debug, Clone, PartialEq)]
 pub enum BooleanQueryOp {
     PushEmpty,
-    PushFull,
     PushTermDirectory(FieldRef, TermRef),
     PushDeletionList,
     And,
@@ -108,7 +107,7 @@ impl BooleanQueryBuilder {
         use self::BooleanQueryBlockReturnType::*;
 
         self.stack.push(Rc::new(Leaf{
-            op: PushFull,
+            op: PushEmpty,
             return_type: Full,
         }));
     }
@@ -336,7 +335,7 @@ impl BooleanQueryBuilder {
         let root_block = self.stack.last().unwrap();
         root_block.build(&mut boolean_query);
 
-        (boolean_query, root_block.return_type() == NegatedSparse)
+        (boolean_query, root_block.return_type() == NegatedSparse || root_block.return_type() == Full)
     }
 }
 
@@ -445,9 +444,9 @@ mod builder_tests {
         let (query, negated) = builder.build();
 
         assert_eq!(query, vec![
-            BooleanQueryOp::PushFull,
+            BooleanQueryOp::PushEmpty,
         ]);
-        assert_eq!(negated, false);
+        assert_eq!(negated, true);
     }
 
     #[test]
@@ -534,7 +533,7 @@ mod builder_tests {
 
     #[test]
     fn test_push_full_with_or_combinator() {
-        // If one of the operands to an or combinator is full, the or combinator should be replaced with full
+        // If one of the operands to an or combinator is full, the or combinator should be replaced with empty and the query negated
         let mut builder = BooleanQueryBuilder::new();
 
         builder.push_full();
@@ -544,9 +543,9 @@ mod builder_tests {
         let (query, negated) = builder.build();
 
         assert_eq!(query, vec![
-            BooleanQueryOp::PushFull,
+            BooleanQueryOp::PushEmpty,
         ]);
-        assert_eq!(negated, false);
+        assert_eq!(negated, true);
     }
 
     #[test]

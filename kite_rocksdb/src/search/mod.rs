@@ -20,21 +20,18 @@ fn run_boolean_query<S: Segment>(boolean_query: &Vec<BooleanQueryOp>, is_negated
     for op in boolean_query.iter() {
         match *op {
             BooleanQueryOp::PushEmpty => {
-                stack.push(DocIdSet::new_filled(0));
-            }
-            BooleanQueryOp::PushFull => {
-                stack.push(DocIdSet::new_filled(65536));
+                stack.push(DocIdSet::new());
             }
             BooleanQueryOp::PushTermDirectory(field_ref, term_ref) => {
                 match try!(segment.load_term_directory(field_ref, term_ref)) {
                     Some(doc_id_set) => stack.push(doc_id_set),
-                    None => stack.push(DocIdSet::new_filled(0)),
+                    None => stack.push(DocIdSet::new()),
                 }
             }
             BooleanQueryOp::PushDeletionList => {
                     match try!(segment.load_deletion_list()) {
                     Some(doc_id_set) => stack.push(doc_id_set),
-                    None => stack.push(DocIdSet::new_filled(0)),
+                    None => stack.push(DocIdSet::new()),
                 }
             }
             BooleanQueryOp::And => {
@@ -59,12 +56,17 @@ fn run_boolean_query<S: Segment>(boolean_query: &Vec<BooleanQueryOp>, is_negated
         // This shouldn't be possible unless there's a bug in the planner
         panic!("boolean query executor: stack size too big ({})", stack.len());
     }
+
     let mut matches = stack.pop().unwrap();
 
-    // Invert the list if the query is negated
     if is_negated {
+        // Query returns a negated result so we need to correct this by inverting the returned bitmap
         let total_docs = try!(segment.load_statistic(b"total_docs")).unwrap_or(0);
-        let all_docs = DocIdSet::new_filled(total_docs as u32);
+        let mut all_docs = DocIdSet::new();
+        for doc_id in 0..total_docs {
+            all_docs.insert(doc_id as u16);
+        }
+
         matches = all_docs.exclusion(&matches);
     }
 

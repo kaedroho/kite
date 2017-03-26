@@ -12,22 +12,9 @@ pub struct DocIdSet {
 
 
 impl DocIdSet {
-    pub fn new_filled(mut num_docs: u32) -> DocIdSet {
-        let mut data: RoaringBitmap = RoaringBitmap::new();
-
-        // Cap num_docs to 65536
-        // Note: we cannot simply make num_docs a u16 as 65536 is a valid length
-        if num_docs > 65536 {
-            num_docs = 65536;
-        }
-
-        for doc_id in 0..num_docs {
-            // Note: As num_docs is limited to 65536, doc_id cannot be greater than 65535
-            data.insert(doc_id);
-        }
-
+    pub fn new() -> DocIdSet {
         DocIdSet {
-            data: data
+            data: RoaringBitmap::new()
         }
     }
 
@@ -49,6 +36,10 @@ impl DocIdSet {
         DocIdSet {
             data: roaring_data
         }
+    }
+
+    pub fn insert(&mut self, doc_id: u16) {
+        self.data.insert(doc_id as u32);
     }
 
     pub fn iter<'a>(&'a self) -> DocIdSetIterator<'a> {
