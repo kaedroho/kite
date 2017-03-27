@@ -1,10 +1,11 @@
 use std::str;
 use std::collections::{HashMap, BTreeSet};
+use std::io::Cursor;
 
 use rocksdb::{self, WriteBatch, WriteOptions};
-use kite::doc_id_set::DocIdSet;
+use roaring::RoaringBitmap;
 use kite::document::DocRef;
-use byteorder::{ByteOrder, BigEndian, WriteBytesExt};
+use byteorder::{ByteOrder, BigEndian};
 
 use RocksDBIndexStore;
 use key_builder::KeyBuilder;
@@ -57,7 +58,7 @@ impl RocksDBIndexStore {
         }
 
         let mut current_td_key: Option<(u32, u32)> = None;
-        let mut current_td = Vec::new();
+        let mut current_td = RoaringBitmap::new();
 
         let mut iter = self.db.raw_iterator();
         iter.seek(b"d");
@@ -75,8 +76,11 @@ impl RocksDBIndexStore {
                 if current_td_key != Some((field, term)) {
                     // Finished current term directory. Write it to the DB and start the next one
                     if let Some((field, term)) = current_td_key {
+                        let mut current_td_vec = Vec::new();
+                        current_td.serialize_into(&mut current_td_vec).unwrap();
+
                         let kb = KeyBuilder::segment_dir_list(dest_segment, field, term);
-                        try!(self.db.put_opt(&kb.key(), &current_td, &write_options));
+                        try!(self.db.put_opt(&kb.key(), &current_td_vec, &write_options));
                         current_td.clear();
                     }
 
@@ -84,11 +88,11 @@ impl RocksDBIndexStore {
                 }
 
                 // Merge term directory into the new one (and remap the doc ids)
-                let doc_id_set = DocIdSet::from_bytes(iter.value().unwrap());
-                for doc_id in doc_id_set.iter() {
-                    let doc_ref = DocRef::from_segment_ord(segment, doc_id);
+                let bitmap = RoaringBitmap::deserialize_from(Cursor::new(iter.value().unwrap())).unwrap();
+                for doc_id in bitmap.iter() {
+                    let doc_ref = DocRef::from_segment_ord(segment, doc_id as u16);
                     let new_doc_id = doc_ref_mapping.get(&doc_ref).unwrap();
-                    current_td.write_u16::<BigEndian>(*new_doc_id).unwrap();
+                    current_td.insert(*new_doc_id as u32);
                 }
             }
 
@@ -97,8 +101,11 @@ impl RocksDBIndexStore {
 
         // All done, write the last term directory
         if let Some((field, term)) = current_td_key {
+            let mut current_td_vec = Vec::new();
+            current_td.serialize_into(&mut current_td_vec).unwrap();
+
             let kb = KeyBuilder::segment_dir_list(dest_segment, field, term);
-            try!(self.db.put_opt(&kb.key(), &current_td, &write_options));
+            try!(self.db.put_opt(&kb.key(), &current_td_vec, &write_options));
             current_td.clear();
         }
 

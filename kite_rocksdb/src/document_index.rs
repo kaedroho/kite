@@ -1,10 +1,11 @@
 use std::sync::RwLock;
 use std::collections::{BTreeMap, HashMap};
+use std::io::Cursor;
 
 use rocksdb::{self, DB, WriteBatch};
-use kite::doc_id_set::DocIdSet;
+use roaring::RoaringBitmap;
 use kite::document::DocRef;
-use byteorder::{ByteOrder, BigEndian, WriteBytesExt};
+use byteorder::{ByteOrder, BigEndian};
 
 use key_builder::KeyBuilder;
 use segment_ops::SegmentMergeError;
@@ -135,24 +136,27 @@ impl DocumentIndexManager {
 
         // Merge deletion lists
         // Must be done while the primary_key_index is locked as this prevents any more documents being deleted
-        let mut deletion_list = Vec::new();
+        let mut deletion_list = RoaringBitmap::new();
         for source_segment in source_segments {
             let kb = KeyBuilder::segment_del_list(*source_segment);
             match try!(db.get(&kb.key())) {
-                Some(docid_set) => {
-                    let doc_id_set = DocIdSet::from_bytes(docid_set.to_vec());
-                    for doc_id in doc_id_set.iter() {
-                        let doc_ref = DocRef::from_segment_ord(*source_segment, doc_id);
+                Some(bitmap) => {
+                    let bitmap = RoaringBitmap::deserialize_from(Cursor::new(&bitmap[..])).unwrap();
+                    for doc_id in bitmap.iter() {
+                        let doc_ref = DocRef::from_segment_ord(*source_segment, doc_id as u16);
                         let new_doc_id = doc_ref_mapping.get(&doc_ref).unwrap();
-                        deletion_list.write_u16::<BigEndian>(*new_doc_id).unwrap();
+                        deletion_list.insert(*new_doc_id as u32);
                     }
                 }
                 None => {},
             }
         }
 
+        let mut dl_vec = Vec::new();
+        deletion_list.serialize_into(&mut dl_vec).unwrap();
+
         let kb = KeyBuilder::segment_del_list(dest_segment);
-        try!(db.put(&kb.key(), &deletion_list));
+        try!(db.put(&kb.key(), &dl_vec));
 
         // Commit!
         try!(db.write_without_wal(write_batch));

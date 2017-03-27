@@ -1,7 +1,7 @@
 mod statistics;
 mod planner;
 
-use kite::doc_id_set::DocIdSet;
+use roaring::RoaringBitmap;
 use kite::segment::Segment;
 use kite::query::Query;
 use kite::collectors::{Collector, DocumentMatch};
@@ -14,40 +14,43 @@ use search::planner::boolean_query::BooleanQueryOp;
 use search::planner::score_function::{CombinatorScorer, ScoreFunctionOp};
 
 
-fn run_boolean_query<S: Segment>(boolean_query: &Vec<BooleanQueryOp>, is_negated: bool, segment: &S) -> Result<DocIdSet, String> {
+fn run_boolean_query<S: Segment>(boolean_query: &Vec<BooleanQueryOp>, is_negated: bool, segment: &S) -> Result<RoaringBitmap, String> {
     // Execute boolean query
     let mut stack = Vec::new();
     for op in boolean_query.iter() {
         match *op {
             BooleanQueryOp::PushEmpty => {
-                stack.push(DocIdSet::new());
+                stack.push(RoaringBitmap::new());
             }
             BooleanQueryOp::PushTermDirectory(field_ref, term_ref) => {
                 match try!(segment.load_term_directory(field_ref, term_ref)) {
                     Some(doc_id_set) => stack.push(doc_id_set),
-                    None => stack.push(DocIdSet::new()),
+                    None => stack.push(RoaringBitmap::new()),
                 }
             }
             BooleanQueryOp::PushDeletionList => {
                     match try!(segment.load_deletion_list()) {
                     Some(doc_id_set) => stack.push(doc_id_set),
-                    None => stack.push(DocIdSet::new()),
+                    None => stack.push(RoaringBitmap::new()),
                 }
             }
             BooleanQueryOp::And => {
                 let b = stack.pop().expect("boolean query executor: stack underflow");
-                let a = stack.pop().expect("boolean query executor: stack underflow");
-                stack.push(a.intersection(&b));
+                let mut a = stack.last_mut().expect("boolean query executor: stack underflow");
+
+                a.intersect_with(&b);
             }
             BooleanQueryOp::Or => {
                 let b = stack.pop().expect("boolean query executor: stack underflow");
-                let a = stack.pop().expect("boolean query executor: stack underflow");
-                stack.push(a.union(&b));
+                let mut a = stack.last_mut().expect("boolean query executor: stack underflow");
+
+                a.union_with(&b);
             }
             BooleanQueryOp::AndNot => {
                 let b = stack.pop().expect("boolean query executor: stack underflow");
-                let a = stack.pop().expect("boolean query executor: stack underflow");
-                stack.push(a.exclusion(&b));
+                let mut a = stack.last_mut().expect("boolean query executor: stack underflow");
+
+                a.difference_with(&b);
             }
         }
     }
@@ -62,12 +65,13 @@ fn run_boolean_query<S: Segment>(boolean_query: &Vec<BooleanQueryOp>, is_negated
     if is_negated {
         // Query returns a negated result so we need to correct this by inverting the returned bitmap
         let total_docs = try!(segment.load_statistic(b"total_docs")).unwrap_or(0);
-        let mut all_docs = DocIdSet::new();
+        let mut all_docs = RoaringBitmap::new();
         for doc_id in 0..total_docs {
-            all_docs.insert(doc_id as u16);
+            all_docs.insert(doc_id as u32);
         }
 
-        matches = all_docs.exclusion(&matches);
+        all_docs.difference_with(&matches);
+        matches = all_docs;
     }
 
     Ok(matches)
@@ -83,8 +87,8 @@ fn score_doc<S: Segment, R: StatisticsReader>(doc_id: u16, score_function: &Vec<
             ScoreFunctionOp::TermScorer(field_ref, term_ref, ref scorer) => {
                 // TODO: Check this isn't really slow
                 match try!(segment.load_term_directory(field_ref, term_ref)) {
-                    Some(doc_id_set) => {
-                        if doc_id_set.contains_doc(doc_id) {
+                    Some(term_directory) => {
+                        if term_directory.contains(doc_id as u32) {
                             // Read field length
                             // TODO: we only need this for BM25
                             let field_length_raw = try!(segment.load_stored_field_value_raw(doc_id, field_ref, b"len"));
@@ -158,9 +162,9 @@ fn search_segment<C: Collector, S: Segment, R: StatisticsReader>(collector: &mut
 
     // Score documents and pass to collector
     for doc in matches.iter() {
-        let score = try!(score_doc(doc, &plan.score_function, segment, stats));
+        let score = try!(score_doc(doc as u16, &plan.score_function, segment, stats));
 
-        let doc_ref = segment.doc_ref(doc);
+        let doc_ref = segment.doc_ref(doc as u16);
         let doc_match = DocumentMatch::new_scored(doc_ref.as_u64(), score);
         collector.collect(doc_match);
     }

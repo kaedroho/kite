@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use kite::{Document, Term, TermRef};
 use kite::schema::FieldRef;
 use byteorder::{BigEndian, WriteBytesExt};
+use roaring::RoaringBitmap;
 
 use key_builder::KeyBuilder;
 
@@ -12,7 +13,7 @@ pub struct SegmentBuilder {
     current_doc: u16,
     pub term_dictionary: HashMap<Term, TermRef>,
     current_term_ref: u32,
-    pub term_directories: HashMap<(FieldRef, TermRef), Vec<u16>>,
+    pub term_directories: HashMap<(FieldRef, TermRef), RoaringBitmap>,
     pub statistics: HashMap<Vec<u8>, i64>,
     pub stored_field_values: HashMap<(FieldRef, u16, Vec<u8>), Vec<u8>>,
 }
@@ -73,7 +74,7 @@ impl SegmentBuilder {
                 *term_frequency += 1;
 
                 // Write directory list
-                self.term_directories.entry((*field, term_ref)).or_insert_with(Vec::new).push(doc_id);
+                self.term_directories.entry((*field, term_ref)).or_insert_with(RoaringBitmap::new).insert(doc_id as u32);
             }
 
             // Term frequencies

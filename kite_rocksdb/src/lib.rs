@@ -1,6 +1,7 @@
 extern crate kite;
 extern crate rocksdb;
 extern crate serde_json;
+extern crate roaring;
 extern crate byteorder;
 extern crate chrono;
 #[cfg(test)]
@@ -259,20 +260,16 @@ impl RocksDBIndexStore {
         }
 
         // Write term directories
-        for (&(field_ref, term_ref), doc_ids) in builder.term_directories.iter() {
+        for (&(field_ref, term_ref), term_directory) in builder.term_directories.iter() {
             let new_term_ref = term_dictionary_map.get(&term_ref).expect("TermRef not in term_dictionary_map");
 
-            // Convert doc_id list to bytes
-            let mut doc_ids_bytes = Vec::with_capacity(doc_ids.len() * 2);
-            for doc_id in doc_ids.iter() {
-                let mut doc_id_bytes = [0; 2];
-                BigEndian::write_u16(&mut doc_id_bytes, *doc_id);
-                doc_ids_bytes.push(doc_id_bytes[0]);
-                doc_ids_bytes.push(doc_id_bytes[1]);
-            }
+            // Serialise
+            let mut term_directory_bytes = Vec::new();
+            term_directory.serialize_into(&mut term_directory_bytes).unwrap();
 
+            // Write
             let kb = KeyBuilder::segment_dir_list(segment, field_ref.ord(), new_term_ref.ord());
-            try!(write_batch.put(&kb.key(), &doc_ids_bytes));
+            try!(write_batch.put(&kb.key(), &term_directory_bytes));
         }
 
         // Write stored fields
