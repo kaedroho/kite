@@ -2,15 +2,15 @@ use term::Term;
 
 
 #[derive(Debug, PartialEq)]
-pub enum TermSelector {
+pub enum MultiTermSelector {
     Prefix(String),
 }
 
 
-impl TermSelector {
+impl MultiTermSelector {
     pub fn matches(&self, term: &Term) -> bool {
         match *self {
-            TermSelector::Prefix(ref prefix) => {
+            MultiTermSelector::Prefix(ref prefix) => {
                 return term.as_bytes().starts_with(prefix.as_bytes());
             }
         }

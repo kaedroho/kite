@@ -5,7 +5,7 @@ use std::collections::BTreeMap;
 
 use rocksdb::{self, DB};
 use kite::{Term, TermRef};
-use kite::query::term_selector::TermSelector;
+use kite::query::multi_term_selector::MultiTermSelector;
 
 use key_builder::KeyBuilder;
 
@@ -77,7 +77,7 @@ impl TermDictionaryManager {
     }
 
     /// Iterates over terms in the dictionary which match the selector
-    pub fn select(&self, term_selector: &TermSelector) -> Vec<TermRef> {
+    pub fn select(&self, term_selector: &MultiTermSelector) -> Vec<TermRef> {
         self.terms.read().unwrap().iter()
             .filter(|&(term, _term_ref)| {
                 term_selector.matches(term)

@@ -1,9 +1,9 @@
-pub mod term_selector;
+pub mod multi_term_selector;
 pub mod term_scorer;
 
 use term::Term;
 use schema::FieldRef;
-use query::term_selector::TermSelector;
+use query::multi_term_selector::MultiTermSelector;
 use query::term_scorer::TermScorer;
 
 
@@ -20,7 +20,7 @@ pub enum Query {
     },
     MultiTerm {
         field: FieldRef,
-        term_selector: TermSelector,
+        term_selector: MultiTermSelector,
         scorer: TermScorer,
     },
     Conjunction {
