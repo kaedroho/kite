@@ -50,63 +50,6 @@ impl Query {
         }
     }
 
-    pub fn new_conjunction(queries: Vec<Query>) -> Query {
-        match queries.len() {
-            0 => Query::None,
-            1 => {
-                // Single query, unpack it from queries array and return it
-                for query in queries {
-                    return query;
-                }
-
-                unreachable!();
-            }
-            _ => {
-                Query::Conjunction {
-                    queries: queries,
-                }
-            }
-        }
-    }
-
-    pub fn new_disjunction(queries: Vec<Query>) -> Query {
-        match queries.len() {
-            0 => Query::None,
-            1 => {
-                // Single query, unpack it from queries array and return it
-                for query in queries {
-                    return query;
-                }
-
-                unreachable!();
-            }
-            _ => {
-                Query::Disjunction {
-                    queries: queries,
-                }
-            }
-        }
-    }
-
-    pub fn new_disjunction_max(queries: Vec<Query>) -> Query {
-        match queries.len() {
-            0 => Query::None,
-            1 => {
-                // Single query, unpack it from queries array and return it
-                for query in queries {
-                    return query;
-                }
-
-                unreachable!();
-            }
-            _ => {
-                Query::DisjunctionMax {
-                    queries: queries,
-                }
-            }
-        }
-    }
-
     pub fn boost(&mut self, add_boost: f64) {
         if add_boost == 1.0f64 {
             // This boost query won't have any effect
