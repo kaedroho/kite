@@ -44,13 +44,41 @@ pub enum Query {
 
 
 impl Query {
-    pub fn new() -> Query {
+    pub fn all() -> Query {
         Query::All {
             score: 1.0f64,
         }
     }
 
-    pub fn boost(&mut self, add_boost: f64) {
+    pub fn term(field: FieldRef, term: Term) -> Query {
+        Query::Term {
+            field: field,
+            term: term,
+            scorer: TermScorer::default(),
+        }
+    }
+
+    pub fn filter(self, filter: Query) -> Query {
+        Query::Filter {
+            query: Box::new(self),
+            filter: Box::new(filter),
+        }
+    }
+
+    pub fn exclude(self, exclude: Query) -> Query {
+        Query::Exclude {
+            query: Box::new(self),
+            exclude: Box::new(exclude),
+        }
+    }
+
+    #[inline]
+    pub fn boost(mut self, boost: f64) -> Query {
+        self.add_boost(boost);
+        self
+    }
+
+    fn add_boost(&mut self, add_boost: f64) {
         if add_boost == 1.0f64 {
             // This boost query won't have any effect
             return;
@@ -69,24 +97,24 @@ impl Query {
             }
             Query::Conjunction{ref mut queries} => {
                 for query in queries {
-                    query.boost(add_boost);
+                    query.add_boost(add_boost);
                 }
             }
             Query::Disjunction{ref mut queries} => {
                 for query in queries {
-                    query.boost(add_boost);
+                    query.add_boost(add_boost);
                 }
             }
             Query::DisjunctionMax{ref mut queries} => {
                 for query in queries {
-                    query.boost(add_boost);
+                    query.add_boost(add_boost);
                 }
             }
             Query::Filter{ref mut query, ..} => {
-                query.boost(add_boost);
+                query.add_boost(add_boost);
             }
             Query::Exclude{ref mut query, ..} => {
-                query.boost(add_boost);
+                query.add_boost(add_boost);
             }
         }
     }
