@@ -44,7 +44,7 @@ pub enum Query {
 
 
 impl Query {
-    pub fn new_all() -> Query {
+    pub fn new() -> Query {
         Query::All {
             score: 1.0f64,
         }
