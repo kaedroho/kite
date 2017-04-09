@@ -7,7 +7,7 @@ use kite::query::Query;
 use kite::collectors::{Collector, DocumentMatch};
 use byteorder::{ByteOrder, BigEndian};
 
-use super::RocksDBIndexReader;
+use super::RocksDBReader;
 use search::statistics::{StatisticsReader, RocksDBStatisticsReader};
 use search::planner::{SearchPlan, plan_query};
 use search::planner::boolean_query::BooleanQueryOp;
@@ -173,7 +173,7 @@ fn search_segment<C: Collector, S: Segment, R: StatisticsReader>(collector: &mut
 }
 
 
-impl<'a> RocksDBIndexReader<'a> {
+impl<'a> RocksDBReader<'a> {
     pub fn search<C: Collector>(&self, collector: &mut C, query: &Query) -> Result<(), String> {
         // Plan query
         let plan = plan_query(&self, query, collector.needs_score());

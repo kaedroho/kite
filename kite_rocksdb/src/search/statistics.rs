@@ -4,7 +4,7 @@ use kite::schema::FieldRef;
 use kite::term::TermRef;
 use kite::segment::Segment;
 
-use RocksDBIndexReader;
+use RocksDBReader;
 use key_builder::KeyBuilder;
 
 
@@ -16,7 +16,7 @@ pub trait StatisticsReader {
 
 
 pub struct RocksDBStatisticsReader<'a> {
-    index_reader: &'a RocksDBIndexReader<'a>,
+    index_reader: &'a RocksDBReader<'a>,
     total_docs: HashMap<FieldRef, i64>,
     total_tokens: HashMap<FieldRef, i64>,
     term_document_frequencies: HashMap<(FieldRef, TermRef), i64>,
@@ -24,7 +24,7 @@ pub struct RocksDBStatisticsReader<'a> {
 
 
 impl<'a> RocksDBStatisticsReader<'a> {
-    pub fn new(index_reader: &'a RocksDBIndexReader) -> RocksDBStatisticsReader<'a> {
+    pub fn new(index_reader: &'a RocksDBReader) -> RocksDBStatisticsReader<'a> {
         RocksDBStatisticsReader {
             index_reader: index_reader,
             total_docs: HashMap::new(),

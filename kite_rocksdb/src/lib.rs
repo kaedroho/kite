@@ -300,8 +300,8 @@ impl RocksDBStore {
         }
     }
 
-    pub fn reader<'a>(&'a self) -> RocksDBIndexReader<'a> {
-        RocksDBIndexReader {
+    pub fn reader<'a>(&'a self) -> RocksDBReader<'a> {
+        RocksDBReader {
             store: &self,
             snapshot: self.db.snapshot(),
         }
@@ -341,13 +341,13 @@ impl From<rocksdb::Error> for StoredFieldReadError {
 }
 
 
-pub struct RocksDBIndexReader<'a> {
+pub struct RocksDBReader<'a> {
     store: &'a RocksDBStore,
     snapshot: Snapshot<'a>
 }
 
 
-impl<'a> RocksDBIndexReader<'a> {
+impl<'a> RocksDBReader<'a> {
     pub fn schema(&self) -> &Schema {
         &self.store.schema
     }

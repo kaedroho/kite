@@ -3,7 +3,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use rocksdb::{self, DB, DBRawIterator};
 
-use RocksDBIndexReader;
+use RocksDBReader;
 use segment::RocksDBSegment;
 
 
@@ -51,7 +51,7 @@ impl SegmentManager {
     }
 
     /// Iterates currently active segments
-    pub fn iter_active<'a>(&self, reader: &'a RocksDBIndexReader) -> ActiveSegmentsIterator<'a> {
+    pub fn iter_active<'a>(&self, reader: &'a RocksDBReader) -> ActiveSegmentsIterator<'a> {
         let mut iter = reader.snapshot.raw_iterator();
         iter.seek(b"a");
         ActiveSegmentsIterator {
@@ -64,7 +64,7 @@ impl SegmentManager {
 
 
 pub struct ActiveSegmentsIterator<'a> {
-    reader: &'a RocksDBIndexReader<'a>,
+    reader: &'a RocksDBReader<'a>,
     iter: DBRawIterator,
     fused: bool,
 }

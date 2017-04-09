@@ -3,7 +3,7 @@ pub mod score_function;
 
 use kite::Query;
 
-use RocksDBIndexReader;
+use RocksDBReader;
 use search::planner::boolean_query::{BooleanQueryOp, BooleanQueryBuilder, plan_boolean_query};
 use search::planner::score_function::{ScoreFunctionOp, plan_score_function};
 
@@ -27,7 +27,7 @@ impl SearchPlan {
 }
 
 
-pub fn plan_query(index_reader: &RocksDBIndexReader, query: &Query, score: bool) -> SearchPlan {
+pub fn plan_query(index_reader: &RocksDBReader, query: &Query, score: bool) -> SearchPlan {
     let mut plan = SearchPlan::new();
 
     // Plan boolean query

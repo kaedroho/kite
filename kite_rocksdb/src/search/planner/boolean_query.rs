@@ -4,7 +4,7 @@ use kite::schema::FieldRef;
 use kite::term::TermRef;
 use kite::Query;
 
-use RocksDBIndexReader;
+use RocksDBReader;
 
 
 #[derive(Debug, Clone, PartialEq)]
@@ -340,7 +340,7 @@ impl BooleanQueryBuilder {
 }
 
 
-fn plan_boolean_query_combinator<J: Fn(&mut BooleanQueryBuilder) -> ()> (index_reader: &RocksDBIndexReader, mut builder: &mut BooleanQueryBuilder, queries: &Vec<Query>, join_cb: J) {
+fn plan_boolean_query_combinator<J: Fn(&mut BooleanQueryBuilder) -> ()> (index_reader: &RocksDBReader, mut builder: &mut BooleanQueryBuilder, queries: &Vec<Query>, join_cb: J) {
     match queries.len() {
         0 => {
             builder.push_empty();
@@ -361,7 +361,7 @@ fn plan_boolean_query_combinator<J: Fn(&mut BooleanQueryBuilder) -> ()> (index_r
 }
 
 
-pub fn plan_boolean_query(index_reader: &RocksDBIndexReader, mut builder: &mut BooleanQueryBuilder, query: &Query) {
+pub fn plan_boolean_query(index_reader: &RocksDBReader, mut builder: &mut BooleanQueryBuilder, query: &Query) {
     match *query {
         Query::All{..} => {
             builder.push_full();

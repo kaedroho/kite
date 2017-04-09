@@ -3,7 +3,7 @@ use kite::term::TermRef;
 use kite::Query;
 use kite::query::term_scorer::TermScorer;
 
-use RocksDBIndexReader;
+use RocksDBReader;
 
 
 #[derive(Debug, Clone)]
@@ -21,7 +21,7 @@ pub enum ScoreFunctionOp {
 }
 
 
-fn plan_score_function_combinator(index_reader: &RocksDBIndexReader, mut score_function: &mut Vec<ScoreFunctionOp>, queries: &Vec<Query>, scorer: CombinatorScorer) {
+fn plan_score_function_combinator(index_reader: &RocksDBReader, mut score_function: &mut Vec<ScoreFunctionOp>, queries: &Vec<Query>, scorer: CombinatorScorer) {
     match queries.len() {
         0 => {
             score_function.push(ScoreFunctionOp::Literal(0.0f64));
@@ -41,7 +41,7 @@ fn plan_score_function_combinator(index_reader: &RocksDBIndexReader, mut score_f
 }
 
 
-pub fn plan_score_function(index_reader: &RocksDBIndexReader, mut score_function: &mut Vec<ScoreFunctionOp>, query: &Query) {
+pub fn plan_score_function(index_reader: &RocksDBReader, mut score_function: &mut Vec<ScoreFunctionOp>, query: &Query) {
     match *query {
         Query::All{ref score} => {
             score_function.push(ScoreFunctionOp::Literal(*score));

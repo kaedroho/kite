@@ -6,18 +6,18 @@ use kite::term::TermRef;
 use roaring::RoaringBitmap;
 use byteorder::{ByteOrder, BigEndian};
 
-use RocksDBIndexReader;
+use RocksDBReader;
 use key_builder::KeyBuilder;
 
 
 pub struct RocksDBSegment<'a> {
-    reader: &'a RocksDBIndexReader<'a>,
+    reader: &'a RocksDBReader<'a>,
     id: u32,
 }
 
 
 impl<'a> RocksDBSegment<'a> {
-    pub fn new(reader: &'a RocksDBIndexReader, id: u32) -> RocksDBSegment<'a> {
+    pub fn new(reader: &'a RocksDBReader, id: u32) -> RocksDBSegment<'a> {
         RocksDBSegment {
             reader: reader,
             id: id,
