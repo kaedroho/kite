@@ -1,6 +1,6 @@
 use kite::segment::Segment;
 
-use RocksDBIndexStore;
+use RocksDBStore;
 
 
 #[derive(Debug)]
@@ -33,7 +33,7 @@ impl SegmentStatistics {
 }
 
 
-impl RocksDBIndexStore {
+impl RocksDBStore {
     pub fn get_segment_statistics(&self) -> Result<Vec<(u32, SegmentStatistics)>, String> {
         let mut segment_stats = Vec::new();
         let reader = self.reader();

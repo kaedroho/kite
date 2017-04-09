@@ -17,14 +17,14 @@ use kite::token::Token;
 use kite::schema::{FieldType, FIELD_INDEXED, FIELD_STORED};
 use kite::document::{Document, FieldValue};
 
-use kite_rocksdb::RocksDBIndexStore;
+use kite_rocksdb::RocksDBStore;
 
 
 #[bench]
 fn bench_insert_single_document(b: &mut Bencher) {
     remove_dir_all("test_indices/bench_insert_single_document");
 
-    let mut store = RocksDBIndexStore::create("test_indices/bench_insert_single_document").unwrap();
+    let mut store = RocksDBStore::create("test_indices/bench_insert_single_document").unwrap();
     let title_field = store.add_field("title".to_string(), FieldType::Text, FIELD_INDEXED).unwrap();
     let body_field = store.add_field("body".to_string(), FieldType::Text, FIELD_INDEXED).unwrap();
     let id_field = store.add_field("id".to_string(), FieldType::I64, FIELD_STORED).unwrap();
@@ -59,7 +59,7 @@ fn bench_insert_single_document(b: &mut Bencher) {
 fn bench_insert_documents_parallel(b: &mut Bencher) {
     remove_dir_all("test_indices/bench_insert_single_document_parallel");
 
-    let mut store = RocksDBIndexStore::create("test_indices/bench_insert_single_document_parallel").unwrap();
+    let mut store = RocksDBStore::create("test_indices/bench_insert_single_document_parallel").unwrap();
     let title_field = store.add_field("title".to_string(), FieldType::Text, FIELD_INDEXED).unwrap();
     let body_field = store.add_field("body".to_string(), FieldType::Text, FIELD_INDEXED).unwrap();
     let id_field = store.add_field("id".to_string(), FieldType::I64, FIELD_STORED).unwrap();

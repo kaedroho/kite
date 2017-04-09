@@ -7,7 +7,7 @@ use roaring::RoaringBitmap;
 use kite::document::DocRef;
 use byteorder::{ByteOrder, BigEndian};
 
-use RocksDBIndexStore;
+use RocksDBStore;
 use key_builder::KeyBuilder;
 
 
@@ -35,7 +35,7 @@ impl From<SegmentMergeError> for String {
 }
 
 
-impl RocksDBIndexStore {
+impl RocksDBStore {
     fn merge_segment_data(&self, source_segments: &Vec<u32>, dest_segment: u32, doc_ref_mapping: &HashMap<DocRef, u16>) -> Result<(), SegmentMergeError> {
         // Put source_segments in a BTreeSet as this is much faster for performing contains queries against
         let source_segments_btree = source_segments.iter().collect::<BTreeSet<_>>();

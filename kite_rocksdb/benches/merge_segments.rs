@@ -14,14 +14,14 @@ use kite::token::Token;
 use kite::schema::{FieldType, FIELD_INDEXED, FIELD_STORED};
 use kite::document::{Document, FieldValue};
 
-use kite_rocksdb::RocksDBIndexStore;
+use kite_rocksdb::RocksDBStore;
 
 
 #[bench]
 fn bench_merge_segments(b: &mut Bencher) {
     remove_dir_all("test_indices/bench_merge_segments");
 
-    let mut store = RocksDBIndexStore::create("test_indices/bench_merge_segments").unwrap();
+    let mut store = RocksDBStore::create("test_indices/bench_merge_segments").unwrap();
     let title_field = store.add_field("title".to_string(), FieldType::Text, FIELD_INDEXED).unwrap();
     let body_field = store.add_field("body".to_string(), FieldType::Text, FIELD_INDEXED).unwrap();
     let id_field = store.add_field("id".to_string(), FieldType::I64, FIELD_STORED).unwrap();

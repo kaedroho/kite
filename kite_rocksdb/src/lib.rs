@@ -118,7 +118,7 @@ impl From<segment_builder::DocumentInsertError> for DocumentInsertError {
 }
 
 
-pub struct RocksDBIndexStore {
+pub struct RocksDBStore {
     schema: Arc<Schema>,
     db: DB,
     term_dictionary: TermDictionaryManager,
@@ -127,8 +127,8 @@ pub struct RocksDBIndexStore {
 }
 
 
-impl RocksDBIndexStore {
-    pub fn create<P: AsRef<Path>>(path: P) -> Result<RocksDBIndexStore, String> {
+impl RocksDBStore {
+    pub fn create<P: AsRef<Path>>(path: P) -> Result<RocksDBStore, String> {
         let mut opts = Options::default();
         opts.set_merge_operator("merge operator", merge_keys);
         opts.create_if_missing(true);
@@ -151,7 +151,7 @@ impl RocksDBIndexStore {
         // Document index
         let document_index = try!(DocumentIndexManager::new(&db));
 
-        Ok(RocksDBIndexStore {
+        Ok(RocksDBStore {
             schema: Arc::new(schema),
             db: db,
             term_dictionary: term_dictionary,
@@ -160,7 +160,7 @@ impl RocksDBIndexStore {
         })
     }
 
-    pub fn open<P: AsRef<Path>>(path: P) -> Result<RocksDBIndexStore, String> {
+    pub fn open<P: AsRef<Path>>(path: P) -> Result<RocksDBStore, String> {
         let mut opts = Options::default();
         opts.set_merge_operator("merge operator", merge_keys);
         let db = try!(DB::open(&opts, path));
@@ -185,7 +185,7 @@ impl RocksDBIndexStore {
         // Document index
         let document_index = try!(DocumentIndexManager::open(&db));
 
-        Ok(RocksDBIndexStore {
+        Ok(RocksDBStore {
             schema: Arc::new(schema),
             db: db,
             term_dictionary: term_dictionary,
@@ -309,9 +309,9 @@ impl RocksDBIndexStore {
 }
 
 
-impl fmt::Debug for RocksDBIndexStore {
+impl fmt::Debug for RocksDBStore {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "RocksDBIndexStore {{ path: {:?} }}", self.db.path())
+        write!(f, "RocksDBStore {{ path: {:?} }}", self.db.path())
     }
 }
 
@@ -342,7 +342,7 @@ impl From<rocksdb::Error> for StoredFieldReadError {
 
 
 pub struct RocksDBIndexReader<'a> {
-    store: &'a RocksDBIndexStore,
+    store: &'a RocksDBStore,
     snapshot: Snapshot<'a>
 }
 
@@ -427,7 +427,7 @@ mod tests {
     use kite::query::term_scorer::TermScorer;
     use kite::collectors::top_score::TopScoreCollector;
 
-    use super::RocksDBIndexStore;
+    use super::RocksDBStore;
 
     fn remove_dir_all_ignore_error<P: AsRef<Path>>(path: P) {
         match remove_dir_all(&path) {
@@ -440,7 +440,7 @@ mod tests {
     fn test_create() {
         remove_dir_all_ignore_error("test_indices/test_create");
 
-        let store = RocksDBIndexStore::create("test_indices/test_create");
+        let store = RocksDBStore::create("test_indices/test_create");
         assert!(store.is_ok());
     }
 
@@ -449,19 +449,19 @@ mod tests {
         remove_dir_all_ignore_error("test_indices/test_open");
 
         // Check that it fails to open a DB which doesn't exist
-        let store = RocksDBIndexStore::open("test_indices/test_open");
+        let store = RocksDBStore::open("test_indices/test_open");
         assert!(store.is_err());
 
         // Create the DB
-        RocksDBIndexStore::create("test_indices/test_open").expect("failed to create test DB");
+        RocksDBStore::create("test_indices/test_open").expect("failed to create test DB");
 
         // Now try and open it
-        let store = RocksDBIndexStore::open("test_indices/test_open");
+        let store = RocksDBStore::open("test_indices/test_open");
         assert!(store.is_ok());
     }
 
-    fn make_test_store(path: &str) -> RocksDBIndexStore {
-        let mut store = RocksDBIndexStore::create(path).unwrap();
+    fn make_test_store(path: &str) -> RocksDBStore {
+        let mut store = RocksDBStore::create(path).unwrap();
         let title_field = store.add_field("title".to_string(), FieldType::Text, FIELD_INDEXED).unwrap();
         let body_field = store.add_field("body".to_string(), FieldType::Text, FIELD_INDEXED).unwrap();
         let pk_field = store.add_field("pk".to_string(), FieldType::I64, FIELD_STORED).unwrap();
@@ -541,7 +541,7 @@ mod tests {
 
         make_test_store("test_indices/test");
 
-        let store = RocksDBIndexStore::open("test_indices/test").unwrap();
+        let store = RocksDBStore::open("test_indices/test").unwrap();
         let title_field = store.schema.get_field_by_name("title").unwrap();
 
         let index_reader = store.reader();
