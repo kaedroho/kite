@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use kite::{Document, Term, TermRef};
 use kite::schema::FieldRef;
+use kite::segment::Segment;
 use byteorder::{BigEndian, WriteBytesExt};
 use roaring::RoaringBitmap;
 
@@ -133,5 +134,28 @@ impl SegmentBuilder {
         }
 
         Ok(doc_id)
+    }
+}
+
+
+impl Segment for SegmentBuilder {
+    fn id(&self) -> u32 {
+        0
+    }
+
+    fn load_statistic(&self, stat_name: &[u8]) -> Result<Option<i64>, String> {
+        Ok(self.statistics.get(stat_name).cloned())
+    }
+
+    fn load_stored_field_value_raw(&self, doc_ord: u16, field_ref: FieldRef, value_type: &[u8]) -> Result<Option<Vec<u8>>, String> {
+        Ok(self.stored_field_values.get(&(field_ref, doc_ord, value_type.to_vec())).cloned())
+    }
+
+    fn load_term_directory(&self, field_ref: FieldRef, term_ref: TermRef) -> Result<Option<RoaringBitmap>, String> {
+        Ok(self.term_directories.get(&(field_ref, term_ref)).cloned())
+    }
+
+    fn load_deletion_list(&self) -> Result<Option<RoaringBitmap>, String> {
+        Ok(None)
     }
 }
