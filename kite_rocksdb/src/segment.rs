@@ -4,7 +4,7 @@ use kite::segment::Segment;
 use kite::schema::FieldRef;
 use kite::term::TermRef;
 use roaring::RoaringBitmap;
-use byteorder::{ByteOrder, BigEndian};
+use byteorder::{ByteOrder, LittleEndian};
 
 use RocksDBReader;
 use key_builder::KeyBuilder;
@@ -33,7 +33,7 @@ impl<'a> Segment for RocksDBSegment<'a> {
 
     fn load_statistic(&self, stat_name: &[u8]) -> Result<Option<i64>, String> {
         let kb = KeyBuilder::segment_stat(self.id, stat_name);
-        let val = try!(self.reader.snapshot.get(&kb.key())).map(|val| BigEndian::read_i64(&val));
+        let val = try!(self.reader.snapshot.get(&kb.key())).map(|val| LittleEndian::read_i64(&val));
         Ok(val)
     }
 

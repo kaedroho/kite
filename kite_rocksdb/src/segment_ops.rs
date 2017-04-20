@@ -5,7 +5,7 @@ use std::io::Cursor;
 use rocksdb::{self, WriteBatch, WriteOptions};
 use roaring::RoaringBitmap;
 use kite::document::DocRef;
-use byteorder::{ByteOrder, BigEndian};
+use byteorder::{ByteOrder, LittleEndian};
 
 use RocksDBStore;
 use key_builder::KeyBuilder;
@@ -194,7 +194,7 @@ impl RocksDBStore {
 
 
                 let mut stat = statistics.entry(statistic_name).or_insert(0);
-                *stat += BigEndian::read_i64(unsafe { &iter.value_inner().unwrap() });
+                *stat += LittleEndian::read_i64(unsafe { &iter.value_inner().unwrap() });
 
                 iter.next();
             }
@@ -204,7 +204,7 @@ impl RocksDBStore {
         for (stat_name, stat_value) in statistics {
             let kb = KeyBuilder::segment_stat(dest_segment, &stat_name);
             let mut val_bytes = [0; 8];
-            BigEndian::write_i64(&mut val_bytes, stat_value);
+            LittleEndian::write_i64(&mut val_bytes, stat_value);
             try!(self.db.put_opt(&kb.key(), &val_bytes, &write_options));
         }
 
@@ -254,7 +254,7 @@ impl RocksDBStore {
             let kb = KeyBuilder::segment_stat(*source_segment, b"total_docs");
             let total_docs = match try!(self.db.get(&kb.key())) {
                 Some(total_docs_bytes) => {
-                    BigEndian::read_i64(&total_docs_bytes)
+                    LittleEndian::read_i64(&total_docs_bytes)
                 }
                 None => continue,
             };

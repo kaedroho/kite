@@ -28,7 +28,7 @@ use rocksdb::{DB, WriteBatch, Options, MergeOperands, Snapshot};
 use kite::{Document, DocRef, TermRef};
 use kite::document::FieldValue;
 use kite::schema::{Schema, FieldType, FieldFlags, FieldRef, AddFieldError};
-use byteorder::{ByteOrder, BigEndian};
+use byteorder::{ByteOrder, LittleEndian};
 use chrono::{NaiveDateTime, DateTime, UTC};
 
 use key_builder::KeyBuilder;
@@ -72,16 +72,16 @@ fn merge_keys(key: &[u8], existing_val: Option<&[u8]>, operands: &mut MergeOpera
             // Statistic
             // An i64 number that can be incremented or decremented
             let mut value = match existing_val {
-                Some(existing_val) => BigEndian::read_i64(existing_val),
+                Some(existing_val) => LittleEndian::read_i64(existing_val),
                 None => 0
             };
 
             for op in operands {
-                value += BigEndian::read_i64(op);
+                value += LittleEndian::read_i64(op);
             }
 
             let mut buf = [0; 8];
-            BigEndian::write_i64(&mut buf, value);
+            LittleEndian::write_i64(&mut buf, value);
             buf.iter().cloned().collect()
         }
         _ => {
@@ -283,7 +283,7 @@ impl RocksDBStore {
             let kb = KeyBuilder::segment_stat(segment, name);
 
             let mut value_bytes = [0; 8];
-            BigEndian::write_i64(&mut value_bytes, *value);
+            LittleEndian::write_i64(&mut value_bytes, *value);
             try!(write_batch.put(&kb.key(), &value_bytes));
         }
 
@@ -383,7 +383,7 @@ impl<'a> RocksDBReader<'a> {
                             return Err(StoredFieldReadError::IntegerFieldValueSizeError(value.len()));
                         }
 
-                        Ok(Some(FieldValue::Integer(BigEndian::read_i64(&value))))
+                        Ok(Some(FieldValue::Integer(LittleEndian::read_i64(&value))))
                     }
                     FieldType::Boolean => {
                         if value[..] == [b't'] {
@@ -399,7 +399,7 @@ impl<'a> RocksDBReader<'a> {
                             return Err(StoredFieldReadError::IntegerFieldValueSizeError(value.len()))
                         }
 
-                        let timestamp_with_micros = BigEndian::read_i64(&value);
+                        let timestamp_with_micros = LittleEndian::read_i64(&value);
                         let timestamp = timestamp_with_micros / 1000000;
                         let micros = timestamp_with_micros % 1000000;
                         let nanos = micros * 1000;

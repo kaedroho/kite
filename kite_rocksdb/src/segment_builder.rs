@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use kite::{Document, Term, TermRef};
 use kite::schema::FieldRef;
 use kite::segment::Segment;
-use byteorder::{BigEndian, WriteBytesExt};
+use byteorder::{LittleEndian, WriteBytesExt};
 use roaring::RoaringBitmap;
 
 use key_builder::KeyBuilder;
@@ -88,7 +88,7 @@ impl SegmentBuilder {
                     value_type.extend(term_ref.ord().to_string().as_bytes());
 
                     let mut frequency_bytes: Vec<u8> = Vec::new();
-                    frequency_bytes.write_i64::<BigEndian>(frequency).unwrap();
+                    frequency_bytes.write_i64::<LittleEndian>(frequency).unwrap();
 
                     self.stored_field_values.insert((*field, doc_id, value_type), frequency_bytes);
                 }

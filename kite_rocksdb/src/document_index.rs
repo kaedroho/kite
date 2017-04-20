@@ -5,7 +5,7 @@ use std::io::Cursor;
 use rocksdb::{self, DB, WriteBatch};
 use roaring::RoaringBitmap;
 use kite::document::DocRef;
-use byteorder::{ByteOrder, BigEndian};
+use byteorder::{ByteOrder, LittleEndian};
 
 use key_builder::KeyBuilder;
 use segment_ops::SegmentMergeError;
@@ -39,8 +39,8 @@ impl DocumentIndexManager {
             }
 
             let v = iter.value().unwrap();
-            let segment = BigEndian::read_u32(&v[0..4]);
-            let ord = BigEndian::read_u16(&v[4..6]);
+            let segment = LittleEndian::read_u32(&v[0..4]);
+            let ord = LittleEndian::read_u16(&v[4..6]);
             let doc_ref = DocRef::from_segment_ord(segment, ord);
 
             primary_key_index.insert(k[1..].to_vec(), doc_ref);
@@ -56,13 +56,13 @@ impl DocumentIndexManager {
     fn delete_document_by_ref_unchecked(&self, write_batch: &mut WriteBatch, doc_ref: DocRef) -> Result<(), rocksdb::Error> {
         let kb = KeyBuilder::segment_del_list(doc_ref.segment());
         let mut previous_doc_id_bytes = [0; 2];
-        BigEndian::write_u16(&mut previous_doc_id_bytes, doc_ref.ord());
+        LittleEndian::write_u16(&mut previous_doc_id_bytes, doc_ref.ord());
         try!(write_batch.merge(&kb.key(), &previous_doc_id_bytes));
 
         // Increment deleted docs
         let kb = KeyBuilder::segment_stat(doc_ref.segment(), b"deleted_docs");
         let mut inc_bytes = [0; 8];
-        BigEndian::write_i64(&mut inc_bytes, 1);
+        LittleEndian::write_i64(&mut inc_bytes, 1);
         try!(write_batch.merge(&kb.key(), &inc_bytes));
 
         Ok(())
@@ -75,8 +75,8 @@ impl DocumentIndexManager {
 
         let kb = KeyBuilder::primary_key_index(key);
         let mut doc_ref_bytes = [0; 6];
-        BigEndian::write_u32(&mut doc_ref_bytes, doc_ref.segment());
-        BigEndian::write_u16(&mut doc_ref_bytes[4..], doc_ref.ord());
+        LittleEndian::write_u32(&mut doc_ref_bytes, doc_ref.segment());
+        LittleEndian::write_u16(&mut doc_ref_bytes[4..], doc_ref.ord());
         try!(write_batch.put(&kb.key(), &doc_ref_bytes));
 
         // If there was a document there previously, delete it
@@ -127,8 +127,8 @@ impl DocumentIndexManager {
 
             let kb = KeyBuilder::primary_key_index(&key);
             let mut doc_ref_bytes = [0; 6];
-            BigEndian::write_u32(&mut doc_ref_bytes, new_doc_ref.segment());
-            BigEndian::write_u16(&mut doc_ref_bytes[4..], new_doc_ref.ord());
+            LittleEndian::write_u32(&mut doc_ref_bytes, new_doc_ref.segment());
+            LittleEndian::write_u16(&mut doc_ref_bytes[4..], new_doc_ref.ord());
             try!(write_batch.put(&kb.key(), &doc_ref_bytes));
 
             primary_key_index.insert(key, new_doc_ref);

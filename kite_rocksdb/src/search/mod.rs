@@ -5,7 +5,7 @@ use roaring::RoaringBitmap;
 use kite::segment::Segment;
 use kite::query::Query;
 use kite::collectors::{Collector, DocumentMatch};
-use byteorder::{ByteOrder, BigEndian};
+use byteorder::{ByteOrder, LittleEndian};
 
 use super::RocksDBReader;
 use search::statistics::{StatisticsReader, RocksDBStatisticsReader};
@@ -105,7 +105,7 @@ fn score_doc<S: Segment, R: StatisticsReader>(doc_id: u16, score_function: &Vec<
                             value_type.extend(term_ref.ord().to_string().as_bytes());
                             let term_frequency_raw = try!(segment.load_stored_field_value_raw(doc_id, field_ref, &value_type));
                             let term_frequency = match term_frequency_raw {
-                                Some(value) => BigEndian::read_i64(&value),
+                                Some(value) => LittleEndian::read_i64(&value),
                                 None => 1,
                             };
 

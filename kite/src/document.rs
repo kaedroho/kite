@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use serde;
 use chrono::{DateTime, UTC, Timelike};
-use byteorder::{WriteBytesExt, BigEndian};
+use byteorder::{WriteBytesExt, LittleEndian};
 
 use token::Token;
 use schema::FieldRef;
@@ -60,7 +60,7 @@ impl FieldValue {
             }
             FieldValue::Integer(value) => {
                 let mut bytes = Vec::with_capacity(8);
-                bytes.write_i64::<BigEndian>(value).unwrap();
+                bytes.write_i64::<LittleEndian>(value).unwrap();
                 bytes
             }
             FieldValue::Boolean(value) => {
@@ -75,7 +75,7 @@ impl FieldValue {
                 let timestamp = value.timestamp();
                 let micros = value.nanosecond() / 1000;
                 let timestamp_with_micros = timestamp * 1000000 + micros as i64;
-                bytes.write_i64::<BigEndian>(timestamp_with_micros).unwrap();
+                bytes.write_i64::<LittleEndian>(timestamp_with_micros).unwrap();
                 bytes
             }
         }
