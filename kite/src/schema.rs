@@ -32,13 +32,13 @@ impl Serialize for FieldFlags {
 }
 
 
-impl Deserialize for FieldFlags {
+impl<'a> Deserialize<'a> for FieldFlags {
     fn deserialize<D>(deserializer: D) -> Result<FieldFlags, D::Error>
-        where D: Deserializer
+        where D: Deserializer<'a>
     {
         struct Visitor;
 
-        impl ::serde::de::Visitor for Visitor {
+        impl<'a> ::serde::de::Visitor<'a> for Visitor {
             type Value = FieldFlags;
 
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -102,8 +102,47 @@ impl FieldInfo {
 }
 
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub struct FieldRef(u32);
+
+
+// FieldRef needs to be serialised as a string as it's used as a mapping key
+
+impl Serialize for FieldRef {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where S: Serializer
+    {
+        serializer.serialize_str(&self.0.to_string())
+    }
+}
+
+
+impl<'a> Deserialize<'a> for FieldRef {
+    fn deserialize<D>(deserializer: D) -> Result<FieldRef, D::Error>
+        where D: Deserializer<'a>
+    {
+        struct Visitor;
+
+        impl<'a> ::serde::de::Visitor<'a> for Visitor {
+            type Value = FieldRef;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("a string containing an integer")
+            }
+
+            fn visit_str<E>(self, value: &str) -> Result<FieldRef, E>
+                where E: ::serde::de::Error
+            {
+                match value.parse() {
+                    Ok(value) => Ok(FieldRef::new(value)),
+                    Err(_) => Err(E::invalid_value(::serde::de::Unexpected::Str(value), &"a string containing an integer")),
+                }
+            }
+        }
+
+        deserializer.deserialize_str(Visitor)
+    }
+}
 
 
 impl FieldRef {

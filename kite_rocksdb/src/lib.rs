@@ -204,7 +204,7 @@ impl RocksDBStore {
         self.schema = Arc::new(schema_copy);
 
         // FIXME: How do we throw this error?
-        self.db.put(b".schema", serde_json::to_string(&self.schema).unwrap().as_bytes()).unwrap();
+        self.db.put(b".schema", serde_json::to_string(&*self.schema).unwrap().as_bytes()).unwrap();
 
         Ok(field_ref)
     }
@@ -217,7 +217,7 @@ impl RocksDBStore {
             self.schema = Arc::new(schema_copy);
 
             // FIXME: How do we throw this error?
-            self.db.put(b".schema", serde_json::to_string(&self.schema).unwrap().as_bytes()).unwrap();
+            self.db.put(b".schema", serde_json::to_string(&*self.schema).unwrap().as_bytes()).unwrap();
         }
 
         field_removed
