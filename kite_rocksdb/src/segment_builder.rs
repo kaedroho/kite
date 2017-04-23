@@ -64,22 +64,20 @@ impl SegmentBuilder {
         for (field, tokens) in doc.indexed_fields.iter() {
             let mut field_token_count = 0;
 
-            for token in tokens.iter() {
-                field_token_count += 1;
+            for (term, positions) in tokens.iter() {
+                let frequency = positions.len();
+                field_token_count += frequency;
 
                 // Get term ref
-                let term_ref = self.get_term_ref(&token.term);
+                let term_ref = self.get_term_ref(term);
 
                 // Term frequency
                 let mut term_frequency = term_frequencies.entry(term_ref).or_insert(0);
-                *term_frequency += 1;
+                *term_frequency += frequency;
 
                 // Write directory list
                 self.term_directories.entry((*field, term_ref)).or_insert_with(RoaringBitmap::new).insert(doc_id as u32);
-            }
 
-            // Term frequencies
-            for (term_ref, frequency) in term_frequencies.drain() {
                 // Write term frequency
                 // 1 is by far the most common frequency. At search time, we interpret a missing
                 // key as meaning there is a term frequency of 1
@@ -88,7 +86,7 @@ impl SegmentBuilder {
                     value_type.extend(term_ref.ord().to_string().as_bytes());
 
                     let mut frequency_bytes: Vec<u8> = Vec::new();
-                    frequency_bytes.write_i64::<LittleEndian>(frequency).unwrap();
+                    frequency_bytes.write_i64::<LittleEndian>(frequency as i64).unwrap();
 
                     self.stored_field_values.insert((*field, doc_id, value_type), frequency_bytes);
                 }
@@ -118,7 +116,7 @@ impl SegmentBuilder {
             {
                 let stat_name = KeyBuilder::segment_stat_total_field_tokens_stat_name(field.ord());
                 let mut stat = self.statistics.entry(stat_name).or_insert(0);
-                *stat += field_token_count;
+                *stat += field_token_count as i64;
             }
         }
 

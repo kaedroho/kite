@@ -472,12 +472,12 @@ mod tests {
                 title_field => vec![
                     Token { term: Term::from_string("hello"), position: 1 },
                     Token { term: Term::from_string("world"), position: 2 },
-                ],
+                ].into(),
                 body_field => vec![
                     Token { term: Term::from_string("lorem"), position: 1 },
                     Token { term: Term::from_string("ipsum"), position: 2 },
                     Token { term: Term::from_string("dolar"), position: 3 },
-                ],
+                ].into(),
             },
             stored_fields: hashmap! {
                 pk_field => FieldValue::Integer(1),
@@ -490,12 +490,12 @@ mod tests {
                 title_field => vec![
                     Token { term: Term::from_string("howdy"), position: 1 },
                     Token { term: Term::from_string("partner"), position: 2 },
-                ],
+                ].into(),
                 body_field => vec![
                     Token { term: Term::from_string("lorem"), position: 1 },
                     Token { term: Term::from_string("ipsum"), position: 2 },
                     Token { term: Term::from_string("dolar"), position: 3 },
-                ],
+                ].into(),
             },
             stored_fields: hashmap! {
                 pk_field => FieldValue::Integer(2),

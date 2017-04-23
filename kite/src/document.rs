@@ -4,7 +4,7 @@ use serde;
 use chrono::{DateTime, UTC, Timelike};
 use byteorder::{WriteBytesExt, LittleEndian};
 
-use token::Token;
+use term_vector::TermVector;
 use schema::FieldRef;
 
 
@@ -100,6 +100,6 @@ impl serde::Serialize for FieldValue {
 #[derive(Debug, Clone)]
 pub struct Document {
     pub key: String,
-    pub indexed_fields: HashMap<FieldRef, Vec<Token>>,
+    pub indexed_fields: HashMap<FieldRef, TermVector>,
     pub stored_fields: HashMap<FieldRef, FieldValue>,
 }

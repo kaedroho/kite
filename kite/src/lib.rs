@@ -10,6 +10,7 @@ extern crate bitflags;
 
 pub mod term;
 pub mod token;
+pub mod term_vector;
 pub mod schema;
 pub mod document;
 pub mod segment;
