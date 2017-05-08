@@ -4,6 +4,8 @@ version = "0.1.0"
 authors = ["Karl Hobley <karlhobley10@gmail.com>"]
 description = "Search engine library"
 license = "Apache-2.0"
+keywords = ["search-engine", "search", "embedded-database", "database"]
+categories = ["database-implementations", "text-processing"]
 
 [dependencies]
 serde = "1.0"
