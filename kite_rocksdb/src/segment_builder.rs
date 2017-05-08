@@ -98,7 +98,7 @@ impl SegmentBuilder {
 
             // Field length
             // Used by the BM25 similarity model
-            let length = ((field_token_count as f64).sqrt() - 1.0) * 3.0;
+            let length = ((field_token_count as f32).sqrt() - 1.0) * 3.0;
             let length = if length > 255.0 { 255.0 } else { length } as u8;
             if length != 0 {
                 self.stored_field_values.insert((*field, doc_id, b"len".to_vec()), vec![length]);

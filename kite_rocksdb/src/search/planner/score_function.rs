@@ -15,7 +15,7 @@ pub enum CombinatorScorer {
 
 #[derive(Debug, Clone)]
 pub enum ScoreFunctionOp {
-    Literal(f64),
+    Literal(f32),
     TermScorer(FieldRef, TermRef, TermScorer),
     CombinatorScorer(u32, CombinatorScorer),
 }
@@ -24,7 +24,7 @@ pub enum ScoreFunctionOp {
 fn plan_score_function_combinator(index_reader: &RocksDBReader, mut score_function: &mut Vec<ScoreFunctionOp>, queries: &Vec<Query>, scorer: CombinatorScorer) {
     match queries.len() {
         0 => {
-            score_function.push(ScoreFunctionOp::Literal(0.0f64));
+            score_function.push(ScoreFunctionOp::Literal(0.0f32));
         }
         1 =>  plan_score_function(index_reader, &mut score_function, &queries[0]),
         _ => {
@@ -47,7 +47,7 @@ pub fn plan_score_function(index_reader: &RocksDBReader, mut score_function: &mu
             score_function.push(ScoreFunctionOp::Literal(*score));
         }
         Query::None => {
-            score_function.push(ScoreFunctionOp::Literal(0.0f64));
+            score_function.push(ScoreFunctionOp::Literal(0.0f32));
         }
         Query::Term{field, ref term, ref scorer} => {
             // Get term
@@ -55,7 +55,7 @@ pub fn plan_score_function(index_reader: &RocksDBReader, mut score_function: &mu
                 Some(term_ref) => term_ref,
                 None => {
                     // Term doesn't exist, so will never match
-                    score_function.push(ScoreFunctionOp::Literal(0.0f64));
+                    score_function.push(ScoreFunctionOp::Literal(0.0f32));
                     return
                 }
             };
@@ -76,7 +76,7 @@ pub fn plan_score_function(index_reader: &RocksDBReader, mut score_function: &mu
             // than one score value being pushed to the stack, combine the score values
             // with a combinator operation.
             match total_terms {
-                0 => score_function.push(ScoreFunctionOp::Literal(0.0f64)),
+                0 => score_function.push(ScoreFunctionOp::Literal(0.0f32)),
                 1 => {},
                 _ => score_function.push(ScoreFunctionOp::CombinatorScorer(total_terms, CombinatorScorer::Avg)),
             }

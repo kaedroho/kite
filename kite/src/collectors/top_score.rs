@@ -4,26 +4,26 @@ use std::collections::BinaryHeap;
 use collectors::{Collector, DocumentMatch};
 
 
-/// An f64 that cannot be NaN.
+/// An f32 that cannot be NaN.
 /// We need to order documents by score but NaN cannot be ordered, so we convert all scores into
-/// RealF64 first, handling any invalid values while doing that conversion
+/// Realf32 first, handling any invalid values while doing that conversion
 #[derive(Copy, Clone, PartialEq, PartialOrd)]
-struct RealF64(f64);
+struct RealF32(f32);
 
-impl RealF64 {
-    fn new(val: f64) -> Option<RealF64> {
+impl RealF32 {
+    fn new(val: f32) -> Option<RealF32> {
         if val.is_nan() {
             None
         } else {
-            Some(RealF64(val))
+            Some(RealF32(val))
         }
     }
 }
 
-impl Eq for RealF64 {}
+impl Eq for RealF32 {}
 
-impl Ord for RealF64 {
-    fn cmp(&self, other: &RealF64) -> Ordering {
+impl Ord for RealF32 {
+    fn cmp(&self, other: &RealF32) -> Ordering {
         self.partial_cmp(other).unwrap()
     }
 }
@@ -32,7 +32,7 @@ impl Ord for RealF64 {
 #[derive(Copy, Clone, PartialEq, Eq)]
 struct ScoredDocument {
     id: u64,
-    score: RealF64,
+    score: RealF32,
 }
 
 
@@ -85,8 +85,8 @@ impl Collector for TopScoreCollector {
         // Build a ScoredDocument object, checking that the score is set and not NaN
         let scored_document = match score {
             Some(score) => {
-                // Convert to RealF64 which is orderable but does not support NaN
-                match RealF64::new(-score) {
+                // Convert to RealF32 which is orderable but does not support NaN
+                match RealF32::new(-score) {
                     Some(real_score) => {
                         ScoredDocument {
                             id: doc_id,
@@ -140,10 +140,10 @@ mod tests {
     fn test_top_score_collector_collect() {
         let mut collector = TopScoreCollector::new(10);
 
-        collector.collect(DocumentMatch::new_scored(0, 1.0f64));
-        collector.collect(DocumentMatch::new_scored(1, 0.5f64));
-        collector.collect(DocumentMatch::new_scored(2, 2.0f64));
-        collector.collect(DocumentMatch::new_scored(3, 1.5f64));
+        collector.collect(DocumentMatch::new_scored(0, 1.0f32));
+        collector.collect(DocumentMatch::new_scored(1, 0.5f32));
+        collector.collect(DocumentMatch::new_scored(2, 2.0f32));
+        collector.collect(DocumentMatch::new_scored(3, 1.5f32));
 
         let docs = collector.into_sorted_vec();
         assert_eq!(docs.len(), 4);
@@ -157,9 +157,9 @@ mod tests {
     fn test_top_score_collector_truncate() {
         let mut collector = TopScoreCollector::new(2);
 
-        collector.collect(DocumentMatch::new_scored(0, 1.0f64));
-        collector.collect(DocumentMatch::new_scored(1, 0.5f64));
-        collector.collect(DocumentMatch::new_scored(2, 2.0f64));
+        collector.collect(DocumentMatch::new_scored(0, 1.0f32));
+        collector.collect(DocumentMatch::new_scored(1, 0.5f32));
+        collector.collect(DocumentMatch::new_scored(2, 2.0f32));
 
         let docs = collector.into_sorted_vec();
         assert_eq!(docs.len(), 2);

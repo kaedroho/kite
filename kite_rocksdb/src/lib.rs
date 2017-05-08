@@ -554,17 +554,17 @@ mod tests {
                 Query::Term {
                     field: title_field,
                     term: Term::from_string("howdy"),
-                    scorer: TermScorer::default_with_boost(2.0f64),
+                    scorer: TermScorer::default_with_boost(2.0f32),
                 },
                 Query::Term {
                     field: title_field,
                     term: Term::from_string("partner"),
-                    scorer: TermScorer::default_with_boost(2.0f64),
+                    scorer: TermScorer::default_with_boost(2.0f32),
                 },
                 Query::Term {
                     field: title_field,
                     term: Term::from_string("hello"),
-                    scorer: TermScorer::default_with_boost(2.0f64),
+                    scorer: TermScorer::default_with_boost(2.0f32),
                 }
             ]
         };

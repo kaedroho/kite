@@ -10,7 +10,7 @@ use query::term_scorer::TermScorer;
 #[derive(Debug, PartialEq)]
 pub enum Query {
     All {
-        score: f64,
+        score: f32,
     },
     None,
     Term {
@@ -46,7 +46,7 @@ pub enum Query {
 impl Query {
     pub fn all() -> Query {
         Query::All {
-            score: 1.0f64,
+            score: 1.0f32,
         }
     }
 
@@ -73,13 +73,13 @@ impl Query {
     }
 
     #[inline]
-    pub fn boost(mut self, boost: f64) -> Query {
+    pub fn boost(mut self, boost: f32) -> Query {
         self.add_boost(boost);
         self
     }
 
-    fn add_boost(&mut self, add_boost: f64) {
-        if add_boost == 1.0f64 {
+    fn add_boost(&mut self, add_boost: f32) {
+        if add_boost == 1.0f32 {
             // This boost query won't have any effect
             return;
         }

@@ -78,7 +78,7 @@ fn run_boolean_query<S: Segment>(boolean_query: &Vec<BooleanQueryOp>, is_negated
 }
 
 
-fn score_doc<S: Segment, R: StatisticsReader>(doc_id: u16, score_function: &Vec<ScoreFunctionOp>, segment: &S, mut stats: &mut R) -> Result<f64, String> {
+fn score_doc<S: Segment, R: StatisticsReader>(doc_id: u16, score_function: &Vec<ScoreFunctionOp>, segment: &S, mut stats: &mut R) -> Result<f32, String> {
     // Execute score function
     let mut stack = Vec::new();
     for op in score_function.iter() {
@@ -94,7 +94,7 @@ fn score_doc<S: Segment, R: StatisticsReader>(doc_id: u16, score_function: &Vec<
                             let field_length_raw = try!(segment.load_stored_field_value_raw(doc_id, field_ref, b"len"));
                             let field_length = match field_length_raw {
                                 Some(value) => {
-                                    let length_sqrt = (value[0] as f64) / 3.0 + 1.0;
+                                    let length_sqrt = (value[0] as f32) / 3.0 + 1.0;
                                     length_sqrt * length_sqrt
                                 }
                                 None => 1.0
@@ -112,25 +112,25 @@ fn score_doc<S: Segment, R: StatisticsReader>(doc_id: u16, score_function: &Vec<
                             let score = scorer.similarity_model.score(term_frequency as u32, field_length, try!(stats.total_tokens(field_ref)) as u64, try!(stats.total_docs(field_ref)) as u64, try!(stats.term_document_frequency(field_ref, term_ref)) as u64);
                             stack.push(score * scorer.boost);
                         } else {
-                            stack.push(0.0f64);
+                            stack.push(0.0f32);
                         }
                     }
-                    None => stack.push(0.0f64),
+                    None => stack.push(0.0f32),
                 }
             }
             ScoreFunctionOp::CombinatorScorer(num_vals, ref scorer) => {
                 let score = match *scorer {
                     CombinatorScorer::Avg => {
-                        let mut total_score = 0.0f64;
+                        let mut total_score = 0.0f32;
 
                         for _ in 0..num_vals {
                             total_score += stack.pop().expect("document scorer: stack underflow");
                         }
 
-                        total_score / num_vals as f64
+                        total_score / num_vals as f32
                     }
                     CombinatorScorer::Max => {
-                        let mut max_score = 0.0f64;
+                        let mut max_score = 0.0f32;
 
                         for _ in 0..num_vals {
                             let score = stack.pop().expect("document scorer: stack underflow");

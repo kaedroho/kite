@@ -5,7 +5,7 @@ pub mod top_score;
 #[derive(Debug)]
 pub struct DocumentMatch {
     id: u64,
-    score: Option<f64>,
+    score: Option<f32>,
 }
 
 
@@ -17,7 +17,7 @@ impl DocumentMatch {
         }
     }
 
-    pub fn new_scored(id: u64, score: f64) -> DocumentMatch {
+    pub fn new_scored(id: u64, score: f32) -> DocumentMatch {
         DocumentMatch {
             id: id,
             score: Some(score),
@@ -30,7 +30,7 @@ impl DocumentMatch {
     }
 
     #[inline]
-    pub fn score(&self) -> Option<f64> {
+    pub fn score(&self) -> Option<f32> {
         self.score
     }
 }
