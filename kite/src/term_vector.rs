@@ -44,3 +44,20 @@ impl Into<TermVector> for Vec<Token> {
          TermVector(map)
     }
 }
+
+
+impl Into<Vec<Token>> for TermVector {
+    fn into(self) -> Vec<Token> {
+        let mut vec = Vec::new();
+
+        for (term, positions) in self.0 {
+            for position in positions {
+                vec.push(Token { term: term.clone(), position: position });
+            }
+        }
+
+        vec.sort_by_key(|token| token.position);
+
+        vec
+    }
+}
