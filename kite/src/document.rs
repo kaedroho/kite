@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use serde;
 use chrono::{DateTime, UTC, Timelike};
 use byteorder::{WriteBytesExt, LittleEndian};
 
@@ -37,7 +36,7 @@ impl DocRef {
 }
 
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum FieldValue {
     String(String),
     Integer(i64),
@@ -83,21 +82,7 @@ impl FieldValue {
 }
 
 
-impl serde::Serialize for FieldValue {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: serde::Serializer
-    {
-        match *self {
-            FieldValue::String(ref string) => serializer.serialize_str(string),
-            FieldValue::Boolean(value) => serializer.serialize_bool(value),
-            FieldValue::Integer(value) => serializer.serialize_i64(value),
-            FieldValue::DateTime(value) => serializer.serialize_str(&value.to_rfc3339()),
-        }
-    }
-}
-
-
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Document {
     pub key: String,
     pub indexed_fields: HashMap<FieldRef, TermVector>,

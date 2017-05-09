@@ -7,7 +7,7 @@ use query::multi_term_selector::MultiTermSelector;
 use query::term_scorer::TermScorer;
 
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub enum Query {
     All {
         score: f32,

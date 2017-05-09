@@ -1,4 +1,4 @@
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum SimilarityModel {
     TfIdf,
     Bm25{k1: f32, b: f32},

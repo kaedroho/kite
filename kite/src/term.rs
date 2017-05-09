@@ -17,7 +17,7 @@ impl TermRef {
 }
 
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Hash)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Hash, Serialize, Deserialize)]
 pub struct Term(Vec<u8>);
 
 

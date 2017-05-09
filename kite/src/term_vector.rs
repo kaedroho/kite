@@ -5,7 +5,7 @@ use term::Term;
 use token::Token;
 
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TermVector(HashMap<Term, Vec<u32>>);
 
 
