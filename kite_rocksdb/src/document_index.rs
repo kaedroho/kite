@@ -1,5 +1,5 @@
 use std::sync::RwLock;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 use std::io::Cursor;
 
 use rocksdb::{self, DB, WriteBatch};
@@ -13,7 +13,7 @@ use segment_ops::SegmentMergeError;
 
 /// Manages the index's "document index"
 pub struct DocumentIndexManager {
-    primary_key_index: RwLock<BTreeMap<Vec<u8>, DocRef>>,
+    primary_key_index: RwLock<HashMap<Vec<u8>, DocRef>>,
 }
 
 
@@ -21,14 +21,14 @@ impl DocumentIndexManager {
     /// Generates a new document index
     pub fn new(_db: &DB) -> Result<DocumentIndexManager, rocksdb::Error> {
         Ok(DocumentIndexManager {
-            primary_key_index: RwLock::new(BTreeMap::new()),
+            primary_key_index: RwLock::new(HashMap::new()),
         })
     }
 
     /// Loads the document index from an index
     pub fn open(db: &DB) -> Result<DocumentIndexManager, rocksdb::Error> {
         // Read primary key index
-        let mut primary_key_index = BTreeMap::new();
+        let mut primary_key_index = HashMap::new();
         let mut iter = db.raw_iterator();
         iter.seek(b"k");
         while iter.valid() {

@@ -1,7 +1,7 @@
 use std::str;
 use std::sync::{Mutex, RwLock};
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 
 use rocksdb::{self, DB};
 use kite::{Term, TermRef};
@@ -19,7 +19,7 @@ use key_builder::KeyBuilder;
 /// (aka. TermRef). It is entirely held in memory and persisted to the disk.
 pub struct TermDictionaryManager {
     next_term_ref: AtomicUsize,
-    terms: RwLock<BTreeMap<Term, TermRef>>,
+    terms: RwLock<HashMap<Term, TermRef>>,
     write_lock: Mutex<i32>,
 }
 
@@ -33,7 +33,7 @@ impl TermDictionaryManager {
 
         Ok(TermDictionaryManager {
             next_term_ref: AtomicUsize::new(1),
-            terms: RwLock::new(BTreeMap::new()),
+            terms: RwLock::new(HashMap::new()),
             write_lock: Mutex::new(0),
         })
     }
@@ -48,7 +48,7 @@ impl TermDictionaryManager {
         };
 
         // Read dictionary
-        let mut terms = BTreeMap::new();
+        let mut terms = HashMap::new();
         let mut iter = db.raw_iterator();
         iter.seek(b"t");
         while iter.valid() {
