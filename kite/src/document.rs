@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use chrono::{DateTime, UTC, Timelike};
+use chrono::{DateTime, Utc, Timelike};
 use byteorder::{WriteBytesExt, LittleEndian};
 
 use term_vector::TermVector;
@@ -41,7 +41,7 @@ pub enum FieldValue {
     String(String),
     Integer(i64),
     Boolean(bool),
-    DateTime(DateTime<UTC>),
+    DateTime(DateTime<Utc>),
 }
 
 

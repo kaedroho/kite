@@ -29,7 +29,7 @@ use kite::{Document, DocRef, TermRef};
 use kite::document::FieldValue;
 use kite::schema::{Schema, FieldType, FieldFlags, FieldRef, AddFieldError};
 use byteorder::{ByteOrder, LittleEndian};
-use chrono::{NaiveDateTime, DateTime, UTC};
+use chrono::{NaiveDateTime, DateTime, Utc};
 
 use key_builder::KeyBuilder;
 use segment_manager::SegmentManager;
@@ -404,7 +404,7 @@ impl<'a> RocksDBReader<'a> {
                         let micros = timestamp_with_micros % 1000000;
                         let nanos = micros * 1000;
                         let datetime = NaiveDateTime::from_timestamp(timestamp, nanos as u32);
-                        Ok(Some(FieldValue::DateTime(DateTime::from_utc(datetime, UTC))))
+                        Ok(Some(FieldValue::DateTime(DateTime::from_utc(datetime, Utc))))
                     }
                 }
             }

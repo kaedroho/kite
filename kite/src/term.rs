@@ -1,4 +1,4 @@
-use chrono::{DateTime, UTC, Timelike};
+use chrono::{DateTime, Utc, Timelike};
 use byteorder::{WriteBytesExt, LittleEndian};
 
 
@@ -50,7 +50,7 @@ impl Term {
         Term(bytes)
     }
 
-    pub fn from_datetime(value: &DateTime<UTC>) -> Term {
+    pub fn from_datetime(value: &DateTime<Utc>) -> Term {
         let mut bytes = Vec::with_capacity(0);
         let timestamp = value.timestamp();
         let micros = value.nanosecond() / 1000;
@@ -67,7 +67,7 @@ impl Term {
 
 #[cfg(test)]
 mod tests {
-    use chrono::{DateTime, UTC, Timelike};
+    use chrono::{DateTime, Utc, Timelike};
     use super::Term;
 
     #[test]
@@ -123,7 +123,7 @@ mod tests {
 
     #[test]
     fn test_datetime_to_bytes() {
-        let date = "2016-07-23T16:15:00+01:00".parse::<DateTime<UTC>>().unwrap();
+        let date = "2016-07-23T16:15:00+01:00".parse::<DateTime<Utc>>().unwrap();
         let term = Term::from_datetime(&date);
 
         assert_eq!(term.as_bytes().to_vec(), vec![0, 101, 191, 3, 79, 56, 5, 0])
@@ -131,7 +131,7 @@ mod tests {
 
     #[test]
     fn test_datetime_with_microseconds_to_bytes() {
-        let mut date = "2016-07-23T16:15:00+01:00".parse::<DateTime<UTC>>().unwrap();
+        let mut date = "2016-07-23T16:15:00+01:00".parse::<DateTime<Utc>>().unwrap();
         date = date.with_nanosecond(123123123).unwrap();
         let term = Term::from_datetime(&date);
 
@@ -141,7 +141,7 @@ mod tests {
 
     #[test]
     fn test_datetime_with_different_timezone_to_bytes() {
-        let date = "2016-07-23T16:15:00+02:00".parse::<DateTime<UTC>>().unwrap();
+        let date = "2016-07-23T16:15:00+02:00".parse::<DateTime<Utc>>().unwrap();
         let term = Term::from_datetime(&date);
 
         // This is exactly 3_600_000_000 lower than the result of "test_datetime_to_bytes"
