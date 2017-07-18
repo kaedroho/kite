@@ -29,7 +29,7 @@ fn bench_merge_segments(b: &mut Bencher) {
     let mut tokens = Vec::new();
     for t in 0..500 {
         tokens.push(Token {
-            term: Term::from_string(t),
+            term: Term::from_string(&t.to_string()),
             position: t
         });
     }
@@ -39,8 +39,8 @@ fn bench_merge_segments(b: &mut Bencher) {
         store.insert_or_update_document(&Document {
             key: i.to_string(),
             indexed_fields: hashmap! {
-                body_field => tokens.clone(),
-                title_field => vec![Token { term: Term::from_string(i), position: 1}],
+                body_field => tokens.clone().into(),
+                title_field => vec![Token { term: Term::from_string(&i.to_string()), position: 1}].into(),
             },
             stored_fields: hashmap! {
                 id_field => FieldValue::Integer(i),
