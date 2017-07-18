@@ -4,9 +4,7 @@ extern crate serde_json;
 extern crate roaring;
 extern crate byteorder;
 extern crate chrono;
-#[cfg(test)]
-#[macro_use]
-extern crate maplit;
+extern crate fnv;
 
 mod key_builder;
 mod segment;
@@ -22,7 +20,6 @@ use std::str;
 use std::fmt;
 use std::path::Path;
 use std::sync::Arc;
-use std::collections::HashMap;
 
 use rocksdb::{DB, WriteBatch, Options, MergeOperands, Snapshot};
 use kite::{Document, DocRef, TermRef};
@@ -30,6 +27,7 @@ use kite::document::FieldValue;
 use kite::schema::{Schema, FieldType, FieldFlags, FieldRef, AddFieldError};
 use byteorder::{ByteOrder, LittleEndian};
 use chrono::{NaiveDateTime, DateTime, Utc};
+use fnv::FnvHashMap;
 
 use key_builder::KeyBuilder;
 use segment_manager::SegmentManager;
@@ -253,7 +251,7 @@ impl RocksDBStore {
 
         // Merge the term dictionary
         // Writes new terms to disk and generates mapping between the builder's term dictionary and the real one
-        let mut term_dictionary_map: HashMap<TermRef, TermRef> = HashMap::new();
+        let mut term_dictionary_map: FnvHashMap<TermRef, TermRef> = FnvHashMap::default();
         for (term, current_term_ref) in builder.term_dictionary.iter() {
             let new_term_ref = try!(self.term_dictionary.get_or_create(&self.db, term));
             term_dictionary_map.insert(*current_term_ref, new_term_ref);
@@ -420,6 +418,7 @@ mod tests {
     use std::path::Path;
 
     use rocksdb::DB;
+    use fnv::FnvHashMap;
     use kite::{Term, Token, Document};
     use kite::document::FieldValue;
     use kite::schema::{FieldType, FIELD_INDEXED, FIELD_STORED};
@@ -466,40 +465,63 @@ mod tests {
         let body_field = store.add_field("body".to_string(), FieldType::Text, FIELD_INDEXED).unwrap();
         let pk_field = store.add_field("pk".to_string(), FieldType::I64, FIELD_STORED).unwrap();
 
+
+        let mut indexed_fields = FnvHashMap::default();
+        indexed_fields.insert(
+            title_field,
+            vec![
+                Token { term: Term::from_string("hello"), position: 1 },
+                Token { term: Term::from_string("world"), position: 2 },
+            ].into()
+        );
+        indexed_fields.insert(
+            body_field,
+            vec![
+                Token { term: Term::from_string("lorem"), position: 1 },
+                Token { term: Term::from_string("ipsum"), position: 2 },
+                Token { term: Term::from_string("dolar"), position: 3 },
+            ].into()
+        );
+
+        let mut stored_fields = FnvHashMap::default();
+        stored_fields.insert(
+            pk_field,
+            FieldValue::Integer(1)
+        );
+
         store.insert_or_update_document(&Document {
             key: "test_doc".to_string(),
-            indexed_fields: hashmap! {
-                title_field => vec![
-                    Token { term: Term::from_string("hello"), position: 1 },
-                    Token { term: Term::from_string("world"), position: 2 },
-                ].into(),
-                body_field => vec![
-                    Token { term: Term::from_string("lorem"), position: 1 },
-                    Token { term: Term::from_string("ipsum"), position: 2 },
-                    Token { term: Term::from_string("dolar"), position: 3 },
-                ].into(),
-            },
-            stored_fields: hashmap! {
-                pk_field => FieldValue::Integer(1),
-            }
+            indexed_fields: indexed_fields,
+            stored_fields: stored_fields,
         }).unwrap();
+
+        let mut indexed_fields = FnvHashMap::default();
+        indexed_fields.insert(
+            title_field,
+            vec![
+                Token { term: Term::from_string("howdy"), position: 1 },
+                Token { term: Term::from_string("partner"), position: 2 },
+            ].into()
+        );
+        indexed_fields.insert(
+            body_field,
+            vec![
+                Token { term: Term::from_string("lorem"), position: 1 },
+                Token { term: Term::from_string("ipsum"), position: 2 },
+                Token { term: Term::from_string("dolar"), position: 3 },
+            ].into()
+        );
+
+        let mut stored_fields = FnvHashMap::default();
+        stored_fields.insert(
+            pk_field,
+            FieldValue::Integer(2)
+        );
 
         store.insert_or_update_document(&Document {
             key: "another_test_doc".to_string(),
-            indexed_fields: hashmap! {
-                title_field => vec![
-                    Token { term: Term::from_string("howdy"), position: 1 },
-                    Token { term: Term::from_string("partner"), position: 2 },
-                ].into(),
-                body_field => vec![
-                    Token { term: Term::from_string("lorem"), position: 1 },
-                    Token { term: Term::from_string("ipsum"), position: 2 },
-                    Token { term: Term::from_string("dolar"), position: 3 },
-                ].into(),
-            },
-            stored_fields: hashmap! {
-                pk_field => FieldValue::Integer(2),
-            }
+            indexed_fields: indexed_fields,
+            stored_fields: stored_fields,
         }).unwrap();
 
         store.merge_segments(&vec![1, 2]).unwrap();

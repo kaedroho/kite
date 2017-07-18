@@ -1,7 +1,6 @@
-use std::collections::HashMap;
-
 use chrono::{DateTime, Utc, Timelike};
 use byteorder::{WriteBytesExt, LittleEndian};
+use fnv::FnvHashMap;
 
 use term_vector::TermVector;
 use schema::FieldRef;
@@ -85,6 +84,6 @@ impl FieldValue {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Document {
     pub key: String,
-    pub indexed_fields: HashMap<FieldRef, TermVector>,
-    pub stored_fields: HashMap<FieldRef, FieldValue>,
+    pub indexed_fields: FnvHashMap<FieldRef, TermVector>,
+    pub stored_fields: FnvHashMap<FieldRef, FieldValue>,
 }

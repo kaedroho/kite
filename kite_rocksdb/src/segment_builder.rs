@@ -5,6 +5,7 @@ use kite::schema::FieldRef;
 use kite::segment::Segment;
 use byteorder::{LittleEndian, WriteBytesExt};
 use roaring::RoaringBitmap;
+use fnv::FnvHashMap;
 
 use key_builder::KeyBuilder;
 
@@ -14,9 +15,9 @@ pub struct SegmentBuilder {
     current_doc: u16,
     pub term_dictionary: HashMap<Term, TermRef>,
     current_term_ref: u32,
-    pub term_directories: HashMap<(FieldRef, TermRef), RoaringBitmap>,
-    pub statistics: HashMap<Vec<u8>, i64>,
-    pub stored_field_values: HashMap<(FieldRef, u16, Vec<u8>), Vec<u8>>,
+    pub term_directories: FnvHashMap<(FieldRef, TermRef), RoaringBitmap>,
+    pub statistics: FnvHashMap<Vec<u8>, i64>,
+    pub stored_field_values: FnvHashMap<(FieldRef, u16, Vec<u8>), Vec<u8>>,
 }
 
 
@@ -33,9 +34,9 @@ impl SegmentBuilder {
             current_doc: 0,
             term_dictionary: HashMap::new(),
             current_term_ref: 0,
-            term_directories: HashMap::new(),
-            statistics: HashMap::new(),
-            stored_field_values: HashMap::new(),
+            term_directories: FnvHashMap::default(),
+            statistics: FnvHashMap::default(),
+            stored_field_values: FnvHashMap::default(),
         }
     }
 
@@ -59,7 +60,7 @@ impl SegmentBuilder {
         try!(self.current_doc.checked_add(1).ok_or(DocumentInsertError::SegmentFull));
 
         // Insert indexed fields
-        let mut term_frequencies = HashMap::new();
+        let mut term_frequencies = FnvHashMap::default();
         for (field, tokens) in doc.indexed_fields.iter() {
             let mut field_token_count = 0;
 

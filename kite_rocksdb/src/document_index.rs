@@ -6,6 +6,7 @@ use rocksdb::{self, DB, WriteBatch};
 use roaring::RoaringBitmap;
 use kite::document::DocRef;
 use byteorder::{ByteOrder, LittleEndian};
+use fnv::FnvHashMap;
 
 use key_builder::KeyBuilder;
 use segment_ops::SegmentMergeError;
@@ -109,7 +110,7 @@ impl DocumentIndexManager {
         self.primary_key_index.read().unwrap().contains_key(key)
     }
 
-    pub fn commit_segment_merge(&self, db: &DB, mut write_batch: WriteBatch, source_segments: &Vec<u32>, dest_segment: u32, doc_ref_mapping: &HashMap<DocRef, u16>) -> Result<(), SegmentMergeError> {
+    pub fn commit_segment_merge(&self, db: &DB, mut write_batch: WriteBatch, source_segments: &Vec<u32>, dest_segment: u32, doc_ref_mapping: &FnvHashMap<DocRef, u16>) -> Result<(), SegmentMergeError> {
         // Lock the primary key index
         let mut primary_key_index = self.primary_key_index.write().unwrap();
 

@@ -1,13 +1,14 @@
 #![feature(test)]
 
-#[macro_use]
-extern crate maplit;
 extern crate test;
 extern crate kite;
 extern crate kite_rocksdb;
+extern crate fnv;
 
 use test::Bencher;
 use std::fs::remove_dir_all;
+
+use fnv::FnvHashMap;
 
 use kite::term::Term;
 use kite::token::Token;
@@ -36,15 +37,17 @@ fn bench_merge_segments(b: &mut Bencher) {
 
     // Make 1000 single-document segments
     for i in 0..1000 {
+        let mut indexed_fields = FnvHashMap::default();
+        indexed_fields.insert(body_field, tokens.clone().into());
+        indexed_fields.insert(title_field, vec![Token { term: Term::from_string(&i.to_string()), position: 1}].into());
+
+        let mut stored_fields = FnvHashMap::default();
+        stored_fields.insert(id_field, FieldValue::Integer(i));
+
         store.insert_or_update_document(&Document {
             key: i.to_string(),
-            indexed_fields: hashmap! {
-                body_field => tokens.clone().into(),
-                title_field => vec![Token { term: Term::from_string(&i.to_string()), position: 1}].into(),
-            },
-            stored_fields: hashmap! {
-                id_field => FieldValue::Integer(i),
-            },
+            indexed_fields: indexed_fields,
+            stored_fields: stored_fields,
         });
     }
 

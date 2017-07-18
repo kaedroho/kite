@@ -1,11 +1,11 @@
 use std::str;
-use std::collections::{HashMap, BTreeSet};
 use std::io::Cursor;
 
 use rocksdb::{self, WriteBatch, WriteOptions};
 use roaring::RoaringBitmap;
 use kite::document::DocRef;
 use byteorder::{ByteOrder, LittleEndian};
+use fnv::{FnvHashMap, FnvHashSet};
 
 use RocksDBStore;
 use key_builder::KeyBuilder;
@@ -36,9 +36,9 @@ impl From<SegmentMergeError> for String {
 
 
 impl RocksDBStore {
-    fn merge_segment_data(&self, source_segments: &Vec<u32>, dest_segment: u32, doc_ref_mapping: &HashMap<DocRef, u16>) -> Result<(), SegmentMergeError> {
-        // Put source_segments in a BTreeSet as this is much faster for performing contains queries against
-        let source_segments_btree = source_segments.iter().collect::<BTreeSet<_>>();
+    fn merge_segment_data(&self, source_segments: &Vec<u32>, dest_segment: u32, doc_ref_mapping: &FnvHashMap<DocRef, u16>) -> Result<(), SegmentMergeError> {
+        // Put source_segments in a FnvHashSet as this is much faster for performing contains queries against
+        let source_segments_btree = source_segments.iter().collect::<FnvHashSet<_>>();
 
         // Since we're merging existing data, there's no need to recover if it crashes half way through
         let mut write_options = WriteOptions::default();
@@ -161,7 +161,7 @@ impl RocksDBStore {
         // Like stored values, these start with segment ids. But instead of just rewriting the
         // key, we need to sum up all the statistics across the segments being merged.
 
-        let mut statistics = HashMap::new();
+        let mut statistics = FnvHashMap::default();
 
         /// Converts statistic key strings "s1/total_docs" into tuples of 1 i32 and a Vec<u8> (1, ['t', 'o', 't', ...])
         fn parse_statistic_key(key: &[u8]) -> (u32, Vec<u8>) {
@@ -216,7 +216,7 @@ impl RocksDBStore {
         Ok(())
     }
 
-    fn commit_segment_merge(&self, source_segments: &Vec<u32>, dest_segment: u32, doc_ref_mapping: &HashMap<DocRef, u16>) -> Result<(), SegmentMergeError> {
+    fn commit_segment_merge(&self, source_segments: &Vec<u32>, dest_segment: u32, doc_ref_mapping: &FnvHashMap<DocRef, u16>) -> Result<(), SegmentMergeError> {
         let mut write_batch = WriteBatch::default();
 
         // Activate new segment
@@ -247,7 +247,7 @@ impl RocksDBStore {
         //  - The second segment's ids will be remapped to 100 - 199
         //  - The third segment's ids will be remapped to 200 - 299
 
-        let mut doc_ref_mapping: HashMap<DocRef, u16> = HashMap::new();
+        let mut doc_ref_mapping: FnvHashMap<DocRef, u16> = FnvHashMap::default();
         let mut current_ord: u32 = 0;
 
         for source_segment in source_segments.iter() {
@@ -292,8 +292,8 @@ impl RocksDBStore {
     }
 
     pub fn purge_segments(&self, segments: &Vec<u32>) -> Result<(), rocksdb::Error> {
-        // Put segments in a BTreeSet as this is much faster for performing contains queries against
-        let segments_btree = segments.iter().collect::<BTreeSet<_>>();
+        // Put segments in a FnvHashSet as this is much faster for performing contains queries against
+        let segments_btree = segments.iter().collect::<FnvHashSet<_>>();
 
         let mut write_options = WriteOptions::default();
         write_options.set_sync(false);

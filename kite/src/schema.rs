@@ -3,6 +3,7 @@ use std::ops::Deref;
 use std::fmt;
 
 use serde::{Serialize, Deserialize, Serializer, Deserializer};
+use fnv::FnvHashMap;
 
 
 bitflags! {
@@ -165,7 +166,7 @@ pub enum AddFieldError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Schema {
     next_field_id: u32,
-    fields: HashMap<FieldRef, FieldInfo>,
+    fields: FnvHashMap<FieldRef, FieldInfo>,
     field_names: HashMap<String, FieldRef>,
 }
 
@@ -174,7 +175,7 @@ impl Schema {
     pub fn new() -> Schema {
         Schema {
             next_field_id: 1,
-            fields: HashMap::new(),
+            fields: FnvHashMap::default(),
             field_names: HashMap::new(),
         }
     }
@@ -217,9 +218,9 @@ impl Schema {
 
 
 impl Deref for Schema {
-    type Target = HashMap<FieldRef, FieldInfo>;
+    type Target = FnvHashMap<FieldRef, FieldInfo>;
 
-    fn deref(&self) -> &HashMap<FieldRef, FieldInfo> {
+    fn deref(&self) -> &FnvHashMap<FieldRef, FieldInfo> {
         &self.fields
     }
 }

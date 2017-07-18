@@ -7,6 +7,7 @@ extern crate roaring;
 extern crate byteorder;
 #[macro_use]
 extern crate bitflags;
+extern crate fnv;
 
 pub mod term;
 pub mod token;

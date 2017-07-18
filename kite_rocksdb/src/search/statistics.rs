@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use fnv::FnvHashMap;
 
 use kite::schema::FieldRef;
 use kite::term::TermRef;
@@ -17,9 +17,9 @@ pub trait StatisticsReader {
 
 pub struct RocksDBStatisticsReader<'a> {
     index_reader: &'a RocksDBReader<'a>,
-    total_docs: HashMap<FieldRef, i64>,
-    total_tokens: HashMap<FieldRef, i64>,
-    term_document_frequencies: HashMap<(FieldRef, TermRef), i64>,
+    total_docs: FnvHashMap<FieldRef, i64>,
+    total_tokens: FnvHashMap<FieldRef, i64>,
+    term_document_frequencies: FnvHashMap<(FieldRef, TermRef), i64>,
 }
 
 
@@ -27,9 +27,9 @@ impl<'a> RocksDBStatisticsReader<'a> {
     pub fn new(index_reader: &'a RocksDBReader) -> RocksDBStatisticsReader<'a> {
         RocksDBStatisticsReader {
             index_reader: index_reader,
-            total_docs: HashMap::new(),
-            total_tokens: HashMap::new(),
-            term_document_frequencies: HashMap::new(),
+            total_docs: FnvHashMap::default(),
+            total_tokens: FnvHashMap::default(),
+            term_document_frequencies: FnvHashMap::default(),
         }
     }
 
