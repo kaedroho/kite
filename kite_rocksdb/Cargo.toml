@@ -1,6 +1,6 @@
 [package]
 name = "kite_rocksdb"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Karl Hobley <karlhobley10@gmail.com>"]
 description = "RocksDB storage for Kite search engine"
 license = "Apache-2.0"
@@ -18,4 +18,4 @@ rayon = "0.6.0"
 
 [dependencies.kite]
 path = "../kite"
-version = "0.1.0"
+version = "0.2.0"
