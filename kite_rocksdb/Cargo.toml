@@ -6,7 +6,7 @@ description = "RocksDB storage for Kite search engine"
 license = "Apache-2.0"
 
 [dependencies]
-rocksdb = "0.6.1"
+rocksdb = "0.7"
 serde_json = "1.0"
 roaring = "0.5.0"
 byteorder = "0.5"
