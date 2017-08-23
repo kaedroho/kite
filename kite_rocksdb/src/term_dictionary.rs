@@ -9,7 +9,6 @@ use kite::query::multi_term_selector::MultiTermSelector;
 
 use key_builder::KeyBuilder;
 
-
 /// Manages the index's "term dictionary"
 ///
 /// Because terms can be very long, we don't use their byte-representations as
@@ -22,7 +21,6 @@ pub struct TermDictionaryManager {
     terms: RwLock<HashMap<Term, TermRef>>,
     write_lock: Mutex<i32>,
 }
-
 
 impl TermDictionaryManager {
     /// Generates a new term dictionary

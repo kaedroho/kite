@@ -1,10 +1,8 @@
 use collectors::{Collector, DocumentMatch};
 
-
 pub struct TotalCountCollector {
     total_count: u64,
 }
-
 
 impl TotalCountCollector {
     pub fn new() -> TotalCountCollector {
@@ -18,7 +16,6 @@ impl TotalCountCollector {
     }
 }
 
-
 impl Collector for TotalCountCollector {
     fn needs_score(&self) -> bool {
         false
@@ -29,12 +26,10 @@ impl Collector for TotalCountCollector {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use collectors::{Collector, DocumentMatch};
     use super::TotalCountCollector;
-
 
     #[test]
     fn test_total_count_collector_inital_state() {

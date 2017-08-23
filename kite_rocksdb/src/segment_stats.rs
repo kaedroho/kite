@@ -2,13 +2,11 @@ use kite::segment::Segment;
 
 use RocksDBStore;
 
-
 #[derive(Debug)]
 pub struct SegmentStatistics {
     total_docs: i64,
     deleted_docs: i64,
 }
-
 
 impl SegmentStatistics {
     fn read<S: Segment>(segment: &S) -> Result<SegmentStatistics, String> {
@@ -31,7 +29,6 @@ impl SegmentStatistics {
         self.deleted_docs
     }
 }
-
 
 impl RocksDBStore {
     pub fn get_segment_statistics(&self) -> Result<Vec<(u32, SegmentStatistics)>, String> {

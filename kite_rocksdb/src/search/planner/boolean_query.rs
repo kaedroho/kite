@@ -6,7 +6,6 @@ use kite::Query;
 
 use RocksDBReader;
 
-
 #[derive(Debug, Clone, PartialEq)]
 pub enum BooleanQueryOp {
     PushEmpty,
@@ -17,7 +16,6 @@ pub enum BooleanQueryOp {
     AndNot,
 }
 
-
 #[derive(Clone, Copy, PartialEq)]
 enum BooleanQueryBlockReturnType {
     Full,
@@ -25,7 +23,6 @@ enum BooleanQueryBlockReturnType {
     Sparse,
     NegatedSparse,
 }
-
 
 #[derive(Clone)]
 enum BooleanQueryBlock {
@@ -40,7 +37,6 @@ enum BooleanQueryBlock {
         return_type: BooleanQueryBlockReturnType,
     }
 }
-
 
 impl BooleanQueryBlock {
     fn return_type(&self) -> BooleanQueryBlockReturnType {
@@ -77,11 +73,9 @@ impl BooleanQueryBlock {
     }
 }
 
-
 pub struct BooleanQueryBuilder {
     stack: Vec<Rc<BooleanQueryBlock>>,
 }
-
 
 impl BooleanQueryBuilder {
     pub fn new() -> BooleanQueryBuilder {
@@ -339,7 +333,6 @@ impl BooleanQueryBuilder {
     }
 }
 
-
 fn plan_boolean_query_combinator<J: Fn(&mut BooleanQueryBuilder) -> ()> (index_reader: &RocksDBReader, mut builder: &mut BooleanQueryBuilder, queries: &Vec<Query>, join_cb: J) {
     match queries.len() {
         0 => {
@@ -359,7 +352,6 @@ fn plan_boolean_query_combinator<J: Fn(&mut BooleanQueryBuilder) -> ()> (index_r
         }
     }
 }
-
 
 pub fn plan_boolean_query(index_reader: &RocksDBReader, mut builder: &mut BooleanQueryBuilder, query: &Query) {
     match *query {
@@ -411,7 +403,6 @@ pub fn plan_boolean_query(index_reader: &RocksDBReader, mut builder: &mut Boolea
         }
     }
 }
-
 
 #[cfg(test)]
 mod builder_tests {

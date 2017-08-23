@@ -4,17 +4,14 @@ use std::collections::HashMap;
 use term::Term;
 use token::Token;
 
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TermVector(HashMap<Term, Vec<u32>>);
-
 
 impl TermVector {
     pub fn new() -> TermVector {
         TermVector(HashMap::new())
     }
 }
-
 
 impl Deref for TermVector {
     type Target = HashMap<Term, Vec<u32>>;
@@ -24,13 +21,11 @@ impl Deref for TermVector {
     }
 }
 
-
 impl DerefMut for TermVector {
     fn deref_mut(&mut self) -> &mut HashMap<Term, Vec<u32>> {
         &mut self.0
     }
 }
-
 
 impl Into<TermVector> for Vec<Token> {
     fn into(self) -> TermVector {
@@ -44,7 +39,6 @@ impl Into<TermVector> for Vec<Token> {
          TermVector(map)
     }
 }
-
 
 impl Into<Vec<Token>> for TermVector {
     fn into(self) -> Vec<Token> {

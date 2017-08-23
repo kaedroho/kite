@@ -11,12 +11,10 @@ use fnv::FnvHashMap;
 use key_builder::KeyBuilder;
 use segment_ops::SegmentMergeError;
 
-
 /// Manages the index's "document index"
 pub struct DocumentIndexManager {
     primary_key_index: RwLock<HashMap<Vec<u8>, DocRef>>,
 }
-
 
 impl DocumentIndexManager {
     /// Generates a new document index

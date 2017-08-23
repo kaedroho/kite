@@ -6,7 +6,6 @@ use rocksdb::{self, DB, DBRawIterator};
 use RocksDBReader;
 use segment::RocksDBSegment;
 
-
 /// Manages "segments" within the index
 ///
 /// The index is partitioned into immutable segments. This manager is responsible
@@ -15,7 +14,6 @@ use segment::RocksDBSegment;
 pub struct SegmentManager {
     next_segment: AtomicUsize,
 }
-
 
 impl SegmentManager {
     /// Generates a new segment manager
@@ -62,13 +60,11 @@ impl SegmentManager {
     }
 }
 
-
 pub struct ActiveSegmentsIterator<'a> {
     reader: &'a RocksDBReader<'a>,
     iter: DBRawIterator,
     fused: bool,
 }
-
 
 impl<'a> Iterator for ActiveSegmentsIterator<'a> {
     type Item = RocksDBSegment<'a>;

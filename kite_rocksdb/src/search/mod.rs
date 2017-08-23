@@ -13,7 +13,6 @@ use search::planner::{SearchPlan, plan_query};
 use search::planner::boolean_query::BooleanQueryOp;
 use search::planner::score_function::{CombinatorScorer, ScoreFunctionOp};
 
-
 fn run_boolean_query<S: Segment>(boolean_query: &Vec<BooleanQueryOp>, is_negated: bool, segment: &S) -> Result<RoaringBitmap, String> {
     // Execute boolean query
     let mut stack = Vec::new();
@@ -76,7 +75,6 @@ fn run_boolean_query<S: Segment>(boolean_query: &Vec<BooleanQueryOp>, is_negated
 
     Ok(matches)
 }
-
 
 fn score_doc<S: Segment, R: StatisticsReader>(doc_id: u16, score_function: &Vec<ScoreFunctionOp>, segment: &S, mut stats: &mut R) -> Result<f32, String> {
     // Execute score function
@@ -156,7 +154,6 @@ fn score_doc<S: Segment, R: StatisticsReader>(doc_id: u16, score_function: &Vec<
     Ok(stack.pop().expect("document scorer: stack underflow"))
 }
 
-
 fn search_segment<C: Collector, S: Segment, R: StatisticsReader>(collector: &mut C, plan: &SearchPlan, segment: &S, mut stats: &mut R) -> Result<(), String> {
     let matches = try!(run_boolean_query(&plan.boolean_query, plan.boolean_query_is_negated, segment));
 
@@ -171,7 +168,6 @@ fn search_segment<C: Collector, S: Segment, R: StatisticsReader>(collector: &mut
 
     Ok(())
 }
-
 
 impl<'a> RocksDBReader<'a> {
     pub fn search<C: Collector>(&self, collector: &mut C, query: &Query) -> Result<(), String> {

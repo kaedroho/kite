@@ -19,7 +19,6 @@ use kite::document::{Document, FieldValue};
 
 use kite_rocksdb::RocksDBStore;
 
-
 #[bench]
 fn bench_insert_single_document(b: &mut Bencher) {
     remove_dir_all("test_indices/bench_insert_single_document");
@@ -55,7 +54,6 @@ fn bench_insert_single_document(b: &mut Bencher) {
         });
     });
 }
-
 
 #[bench]
 fn bench_insert_documents_parallel(b: &mut Bencher) {

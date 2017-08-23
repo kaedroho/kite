@@ -5,14 +5,12 @@ use std::fmt;
 use serde::{Serialize, Deserialize, Serializer, Deserializer};
 use fnv::FnvHashMap;
 
-
 bitflags! {
     pub flags FieldFlags: u32 {
         const FIELD_INDEXED = 0b00000001,
         const FIELD_STORED  = 0b00000010,
     }
 }
-
 
 impl Serialize for FieldFlags {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
@@ -31,7 +29,6 @@ impl Serialize for FieldFlags {
         serializer.serialize_str(&flag_strings.join("|"))
     }
 }
-
 
 impl<'a> Deserialize<'a> for FieldFlags {
     fn deserialize<D>(deserializer: D) -> Result<FieldFlags, D::Error>
@@ -71,9 +68,6 @@ impl<'a> Deserialize<'a> for FieldFlags {
     }
 }
 
-
-
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum FieldType {
     Text,
@@ -83,14 +77,12 @@ pub enum FieldType {
     DateTime,
 }
 
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FieldInfo {
     name: String,
     pub field_type: FieldType,
     pub field_flags: FieldFlags,
 }
-
 
 impl FieldInfo {
     pub fn new(name: String, field_type: FieldType, field_flags: FieldFlags) -> FieldInfo {
@@ -102,13 +94,10 @@ impl FieldInfo {
     }
 }
 
-
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub struct FieldRef(u32);
 
-
 // FieldRef needs to be serialised as a string as it's used as a mapping key
-
 impl Serialize for FieldRef {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer
@@ -116,7 +105,6 @@ impl Serialize for FieldRef {
         serializer.serialize_str(&self.0.to_string())
     }
 }
-
 
 impl<'a> Deserialize<'a> for FieldRef {
     fn deserialize<D>(deserializer: D) -> Result<FieldRef, D::Error>
@@ -145,7 +133,6 @@ impl<'a> Deserialize<'a> for FieldRef {
     }
 }
 
-
 impl FieldRef {
     pub fn new(ord: u32) -> FieldRef {
         FieldRef(ord)
@@ -156,12 +143,10 @@ impl FieldRef {
     }
 }
 
-
 #[derive(Debug)]
 pub enum AddFieldError {
     FieldAlreadyExists(String),
 }
-
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Schema {
@@ -169,7 +154,6 @@ pub struct Schema {
     fields: FnvHashMap<FieldRef, FieldInfo>,
     field_names: HashMap<String, FieldRef>,
 }
-
 
 impl Schema {
     pub fn new() -> Schema {
@@ -215,7 +199,6 @@ impl Schema {
         }
     }
 }
-
 
 impl Deref for Schema {
     type Target = FnvHashMap<FieldRef, FieldInfo>;

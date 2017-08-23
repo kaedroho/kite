@@ -3,7 +3,6 @@ use std::collections::BinaryHeap;
 
 use collectors::{Collector, DocumentMatch};
 
-
 /// An f32 that cannot be NaN.
 /// We need to order documents by score but NaN cannot be ordered, so we convert all scores into
 /// Realf32 first, handling any invalid values while doing that conversion
@@ -28,13 +27,11 @@ impl Ord for RealF32 {
     }
 }
 
-
 #[derive(Copy, Clone, PartialEq, Eq)]
 struct ScoredDocument {
     id: u64,
     score: RealF32,
 }
-
 
 impl Ord for ScoredDocument {
     fn cmp(&self, other: &ScoredDocument) -> Ordering {
@@ -48,12 +45,10 @@ impl PartialOrd for ScoredDocument {
     }
 }
 
-
 pub struct TopScoreCollector {
     max_docs: usize,
     heap: BinaryHeap<ScoredDocument>,
 }
-
 
 impl TopScoreCollector {
     pub fn new(max_docs: usize) -> TopScoreCollector {
@@ -71,7 +66,6 @@ impl TopScoreCollector {
             .collect()
     }
 }
-
 
 impl Collector for TopScoreCollector {
     fn needs_score(&self) -> bool {
@@ -114,12 +108,10 @@ impl Collector for TopScoreCollector {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use collectors::{Collector, DocumentMatch};
     use super::TopScoreCollector;
-
 
     #[test]
     fn test_top_score_collector_inital_state() {

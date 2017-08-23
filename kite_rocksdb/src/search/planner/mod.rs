@@ -7,14 +7,12 @@ use RocksDBReader;
 use search::planner::boolean_query::{BooleanQueryOp, BooleanQueryBuilder, plan_boolean_query};
 use search::planner::score_function::{ScoreFunctionOp, plan_score_function};
 
-
 #[derive(Debug)]
 pub struct SearchPlan {
     pub boolean_query: Vec<BooleanQueryOp>,
     pub boolean_query_is_negated: bool,
     pub score_function: Vec<ScoreFunctionOp>,
 }
-
 
 impl SearchPlan {
     pub fn new() -> SearchPlan {
@@ -25,7 +23,6 @@ impl SearchPlan {
         }
     }
 }
-
 
 pub fn plan_query(index_reader: &RocksDBReader, query: &Query, score: bool) -> SearchPlan {
     let mut plan = SearchPlan::new();

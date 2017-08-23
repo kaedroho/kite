@@ -6,7 +6,6 @@ use schema::FieldRef;
 use query::multi_term_selector::MultiTermSelector;
 use query::term_scorer::TermScorer;
 
-
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub enum Query {
     /// Matches all documents, assigning the specified score to each one
@@ -14,68 +13,67 @@ pub enum Query {
         /// The score to assign to each document
         score: f32,
     },
-    
+
     /// Matches nothing
     None,
-    
+
     /// Matches documents that contain the specified term in the specified field
     Term {
         /// The field being searched
         field: FieldRef,
-        
+
         /// The term to search for
         term: Term,
 
         /// The method of scoring each match
         scorer: TermScorer,
     },
-    
+
     /// Matches documents by a multi term selector
     /// Used for prefix, fuzzy and regex queries
     MultiTerm {
         /// The field being searched
         field: FieldRef,
-        
+
         /// The term selector to use. All terms that match this selector will be searched
         term_selector: MultiTermSelector,
-        
+
         /// The method of scoring each match.
         scorer: TermScorer,
     },
-    
+
     /// Joins two queries with an AND operator
     /// This intersects the results of the queries. The scores are combined by average
     Conjunction {
         queries: Vec<Query>,
     },
-    
+
     /// Joins two queries with an OR operator
     /// This unites the results of the queries. The scores are combined by average
     Disjunction {
         queries: Vec<Query>,
     },
-    
+
     /// Joins two queries with an OR operator
     /// This unites the results of the queries.
     /// Unlike a regular Disjunction query, this takes the highest score of each query for a particular match
     DisjunctionMax {
         queries: Vec<Query>,
     },
-    
+
     /// Removes documents that do not match the "filter" query from the results
     /// Basically the same as a Conjunction query except that the "filter" query does not affect the score
     Filter {
         query: Box<Query>,
         filter: Box<Query>
     },
-    
+
     /// Removes documents that match the "exclude" query from the results
     Exclude {
         query: Box<Query>,
         exclude: Box<Query>
     },
 }
-
 
 impl Query {
     /// Creates a new All query

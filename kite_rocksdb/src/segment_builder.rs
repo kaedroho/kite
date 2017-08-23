@@ -9,7 +9,6 @@ use fnv::FnvHashMap;
 
 use key_builder::KeyBuilder;
 
-
 #[derive(Debug)]
 pub struct SegmentBuilder {
     current_doc: u16,
@@ -20,13 +19,11 @@ pub struct SegmentBuilder {
     pub stored_field_values: FnvHashMap<(FieldRef, u16, Vec<u8>), Vec<u8>>,
 }
 
-
 #[derive(Debug)]
 pub enum DocumentInsertError {
     /// Segment couldn't hold any more docs
     SegmentFull,
 }
-
 
 impl SegmentBuilder {
     pub fn new() -> SegmentBuilder {
@@ -134,7 +131,6 @@ impl SegmentBuilder {
         Ok(doc_id)
     }
 }
-
 
 impl Segment for SegmentBuilder {
     fn id(&self) -> u32 {

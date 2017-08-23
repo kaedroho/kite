@@ -17,7 +17,6 @@ use kite::document::{Document, FieldValue};
 
 use kite_rocksdb::RocksDBStore;
 
-
 #[bench]
 fn bench_merge_segments(b: &mut Bencher) {
     remove_dir_all("test_indices/bench_merge_segments");

@@ -20,7 +20,6 @@ impl TermRef {
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Hash, Serialize, Deserialize)]
 pub struct Term(Vec<u8>);
 
-
 impl Term {
     pub fn from_bytes(bytes: &[u8]) -> Term {
         Term(bytes.to_vec())
@@ -63,7 +62,6 @@ impl Term {
         &self.0
     }
 }
-
 
 #[cfg(test)]
 mod tests {

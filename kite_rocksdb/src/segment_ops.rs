@@ -10,20 +10,17 @@ use fnv::{FnvHashMap, FnvHashSet};
 use RocksDBStore;
 use key_builder::KeyBuilder;
 
-
 #[derive(Debug)]
 pub enum SegmentMergeError {
     TooManyDocs,
     RocksDBError(rocksdb::Error),
 }
 
-
 impl From<rocksdb::Error> for SegmentMergeError {
     fn from(e: rocksdb::Error) -> SegmentMergeError {
         SegmentMergeError::RocksDBError(e)
     }
 }
-
 
 impl From<SegmentMergeError> for String {
     fn from(e: SegmentMergeError) -> String {
@@ -33,7 +30,6 @@ impl From<SegmentMergeError> for String {
         }
     }
 }
-
 
 impl RocksDBStore {
     fn merge_segment_data(&self, source_segments: &Vec<u32>, dest_segment: u32, doc_ref_mapping: &FnvHashMap<DocRef, u16>) -> Result<(), SegmentMergeError> {
@@ -325,7 +321,6 @@ impl RocksDBStore {
 
             iter.next();
         }
-
 
         // Purge the stored values
 

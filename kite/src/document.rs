@@ -5,10 +5,8 @@ use fnv::FnvHashMap;
 use term_vector::TermVector;
 use schema::FieldRef;
 
-
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub struct DocRef(u32, u16);
-
 
 impl DocRef {
     pub fn segment(&self) -> u32 {
@@ -34,7 +32,6 @@ impl DocRef {
     }
 }
 
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum FieldValue {
     String(String),
@@ -42,7 +39,6 @@ pub enum FieldValue {
     Boolean(bool),
     DateTime(DateTime<Utc>),
 }
-
 
 impl FieldValue {
     pub fn to_bytes(&self) -> Vec<u8> {
@@ -79,7 +75,6 @@ impl FieldValue {
         }
     }
 }
-
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Document {

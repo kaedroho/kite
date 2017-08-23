@@ -5,13 +5,11 @@ use kite::query::term_scorer::TermScorer;
 
 use RocksDBReader;
 
-
 #[derive(Debug, Clone)]
 pub enum CombinatorScorer {
     Avg,
     Max,
 }
-
 
 #[derive(Debug, Clone)]
 pub enum ScoreFunctionOp {
@@ -19,7 +17,6 @@ pub enum ScoreFunctionOp {
     TermScorer(FieldRef, TermRef, TermScorer),
     CombinatorScorer(u32, CombinatorScorer),
 }
-
 
 fn plan_score_function_combinator(index_reader: &RocksDBReader, mut score_function: &mut Vec<ScoreFunctionOp>, queries: &Vec<Query>, scorer: CombinatorScorer) {
     match queries.len() {
@@ -39,7 +36,6 @@ fn plan_score_function_combinator(index_reader: &RocksDBReader, mut score_functi
 
     score_function.push(ScoreFunctionOp::CombinatorScorer(queries.len() as u32, scorer));
 }
-
 
 pub fn plan_score_function(index_reader: &RocksDBReader, mut score_function: &mut Vec<ScoreFunctionOp>, query: &Query) {
     match *query {

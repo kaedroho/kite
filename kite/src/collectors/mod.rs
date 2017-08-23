@@ -1,13 +1,11 @@
 pub mod total_count;
 pub mod top_score;
 
-
 #[derive(Debug)]
 pub struct DocumentMatch {
     id: u64,
     score: Option<f32>,
 }
-
 
 impl DocumentMatch {
     pub fn new_unscored(id: u64) -> DocumentMatch {

@@ -7,13 +7,11 @@ use kite::segment::Segment;
 use RocksDBReader;
 use key_builder::KeyBuilder;
 
-
 pub trait StatisticsReader {
     fn total_docs(&mut self, field_ref: FieldRef) -> Result<i64, String>;
     fn total_tokens(&mut self, field_ref: FieldRef) -> Result<i64, String>;
     fn term_document_frequency(&mut self, field_ref: FieldRef, term_ref: TermRef) -> Result<i64, String>;
 }
-
 
 pub struct RocksDBStatisticsReader<'a> {
     index_reader: &'a RocksDBReader<'a>,
@@ -21,7 +19,6 @@ pub struct RocksDBStatisticsReader<'a> {
     total_tokens: FnvHashMap<FieldRef, i64>,
     term_document_frequencies: FnvHashMap<(FieldRef, TermRef), i64>,
 }
-
 
 impl<'a> RocksDBStatisticsReader<'a> {
     pub fn new(index_reader: &'a RocksDBReader) -> RocksDBStatisticsReader<'a> {
@@ -45,7 +42,6 @@ impl<'a> RocksDBStatisticsReader<'a> {
         Ok(val)
     }
 }
-
 
 impl<'a> StatisticsReader for RocksDBStatisticsReader<'a> {
     fn total_docs(&mut self, field_ref: FieldRef) -> Result<i64, String> {

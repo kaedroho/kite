@@ -34,7 +34,6 @@ use segment_manager::SegmentManager;
 use term_dictionary::TermDictionaryManager;
 use document_index::DocumentIndexManager;
 
-
 fn merge_keys(key: &[u8], existing_val: Option<&[u8]>, operands: &mut MergeOperands) -> Vec<u8> {
     match key[0] {
         b'd' | b'x' => {
@@ -89,7 +88,6 @@ fn merge_keys(key: &[u8], existing_val: Option<&[u8]>, operands: &mut MergeOpera
     }
 }
 
-
 #[derive(Debug)]
 pub enum DocumentInsertError {
     /// A RocksDB error occurred
@@ -99,13 +97,11 @@ pub enum DocumentInsertError {
     SegmentFull,
 }
 
-
 impl From<rocksdb::Error> for DocumentInsertError {
     fn from(e: rocksdb::Error) -> DocumentInsertError {
         DocumentInsertError::RocksDBError(e)
     }
 }
-
 
 impl From<segment_builder::DocumentInsertError> for DocumentInsertError {
     fn from(e: segment_builder::DocumentInsertError) -> DocumentInsertError {
@@ -115,7 +111,6 @@ impl From<segment_builder::DocumentInsertError> for DocumentInsertError {
     }
 }
 
-
 pub struct RocksDBStore {
     schema: Arc<Schema>,
     db: DB,
@@ -123,7 +118,6 @@ pub struct RocksDBStore {
     segments: SegmentManager,
     document_index: DocumentIndexManager,
 }
-
 
 impl RocksDBStore {
     pub fn create<P: AsRef<Path>>(path: P) -> Result<RocksDBStore, String> {
@@ -306,13 +300,11 @@ impl RocksDBStore {
     }
 }
 
-
 impl fmt::Debug for RocksDBStore {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "RocksDBStore {{ path: {:?} }}", self.db.path())
     }
 }
-
 
 pub enum StoredFieldReadError {
     /// The provided FieldRef wasn't valid for this index
@@ -331,19 +323,16 @@ pub enum StoredFieldReadError {
     IntegerFieldValueSizeError(usize),
 }
 
-
 impl From<rocksdb::Error> for StoredFieldReadError {
     fn from(e: rocksdb::Error) -> StoredFieldReadError {
         StoredFieldReadError::RocksDBError(e)
     }
 }
 
-
 pub struct RocksDBReader<'a> {
     store: &'a RocksDBStore,
     snapshot: Snapshot<'a>
 }
-
 
 impl<'a> RocksDBReader<'a> {
     pub fn schema(&self) -> &Schema {
@@ -410,7 +399,6 @@ impl<'a> RocksDBReader<'a> {
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {

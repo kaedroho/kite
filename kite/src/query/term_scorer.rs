@@ -1,12 +1,10 @@
 use similarity::SimilarityModel;
 
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TermScorer {
     pub similarity_model: SimilarityModel,
     pub boost: f32,
 }
-
 
 impl TermScorer {
     pub fn default_with_boost(boost: f32) -> TermScorer {
@@ -19,7 +17,6 @@ impl TermScorer {
         }
     }
 }
-
 
 impl Default for TermScorer {
     fn default() -> TermScorer {

@@ -9,12 +9,10 @@ use byteorder::{ByteOrder, LittleEndian};
 use RocksDBReader;
 use key_builder::KeyBuilder;
 
-
 pub struct RocksDBSegment<'a> {
     reader: &'a RocksDBReader<'a>,
     id: u32,
 }
-
 
 impl<'a> RocksDBSegment<'a> {
     pub fn new(reader: &'a RocksDBReader, id: u32) -> RocksDBSegment<'a> {
@@ -24,7 +22,6 @@ impl<'a> RocksDBSegment<'a> {
         }
     }
 }
-
 
 impl<'a> Segment for RocksDBSegment<'a> {
     fn id(&self) -> u32 {

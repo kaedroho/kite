@@ -2,7 +2,6 @@ pub struct KeyBuilder {
     key: Vec<u8>,
 }
 
-
 impl KeyBuilder {
     pub fn new() -> KeyBuilder {
         KeyBuilder {

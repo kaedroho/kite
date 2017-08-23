@@ -4,20 +4,17 @@ pub enum SimilarityModel {
     Bm25{k1: f32, b: f32},
 }
 
-
 /// tf(term_frequency) = log(term_frequency + 1.0) + 1.0
 #[inline]
 fn tf(term_frequency: u32) -> f32 {
     (term_frequency as f32 + 1.0f32).ln() + 1.0
 }
 
-
 /// idf(term_docs, total_docs) = log((total_docs + 1.0) / (term_docs + 1.0)) + 1.0
 #[inline]
 fn idf(term_docs: u64, total_docs: u64) -> f32 {
     ((total_docs as f32 + 1.0) / (term_docs as f32 + 1.0)).ln() + 1.0
 }
-
 
 impl SimilarityModel {
     pub fn score(&self, term_frequency: u32, length: f32, total_tokens: u64, total_docs: u64, total_docs_with_term: u64) -> f32 {
@@ -38,7 +35,6 @@ impl SimilarityModel {
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {
