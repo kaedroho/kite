@@ -6,87 +6,29 @@ extern crate byteorder;
 extern crate chrono;
 extern crate fnv;
 
-mod key_builder;
-mod segment;
-mod segment_manager;
-mod segment_ops;
-mod segment_stats;
-mod segment_builder;
-mod term_dictionary;
-mod document_index;
-mod search;
+pub mod utils;
+pub mod segment;
+pub mod segment_builder;
+pub mod segment_ops;
+pub mod segment_stats;
+pub mod search;
 
 use std::str;
 use std::fmt;
 use std::path::Path;
 use std::sync::Arc;
+use std::sync::atomic::{Ordering, AtomicUSize};
 
-use rocksdb::{DB, WriteBatch, Options, MergeOperands, Snapshot};
-use kite::{Document, DocRef, TermRef};
+use rocksdb::{DB, Options, MergeOperands, Snapshot};
+use kite::{Document, SegmentId, DocId, TermId};
 use kite::document::FieldValue;
-use kite::schema::{Schema, FieldType, FieldFlags, FieldRef, AddFieldError};
+use kite::schema::{Schema, FieldType, FieldFlags, FieldId, AddFieldError};
 use byteorder::{ByteOrder, LittleEndian};
 use chrono::{NaiveDateTime, DateTime, Utc};
 use fnv::FnvHashMap;
 
-use key_builder::KeyBuilder;
-use segment_manager::SegmentManager;
-use term_dictionary::TermDictionaryManager;
-use document_index::DocumentIndexManager;
-
-fn merge_keys(key: &[u8], existing_val: Option<&[u8]>, operands: &mut MergeOperands) -> Vec<u8> {
-    match key[0] {
-        b'd' | b'x' => {
-            // Sequence of two byte document ids
-            // d = directory
-            // x = deletion list
-
-            // Allocate vec for new Value
-            let new_size = match existing_val {
-                Some(existing_val) => existing_val.len(),
-                None => 0,
-            } + operands.size_hint().0 * 2;
-
-            let mut new_val = Vec::with_capacity(new_size);
-
-            // Push existing value
-            existing_val.map(|v| {
-                for b in v {
-                    new_val.push(*b);
-                }
-            });
-
-            // Append new entries
-            for op in operands {
-                for b in op {
-                    new_val.push(*b);
-                }
-            }
-
-            new_val
-        }
-        b's' => {
-            // Statistic
-            // An i64 number that can be incremented or decremented
-            let mut value = match existing_val {
-                Some(existing_val) => LittleEndian::read_i64(existing_val),
-                None => 0
-            };
-
-            for op in operands {
-                value += LittleEndian::read_i64(op);
-            }
-
-            let mut buf = [0; 8];
-            LittleEndian::write_i64(&mut buf, value);
-            buf.iter().cloned().collect()
-        }
-        _ => {
-            // Unrecognised key, fallback to emulating a put operation (by taking the last value)
-            operands.last().unwrap().iter().cloned().collect()
-        }
-    }
-}
+use utils::key::{Key, StatisticsKey};
+use utils::write_batch::WriteBatch;
 
 #[derive(Debug)]
 pub enum DocumentInsertError {
@@ -111,78 +53,69 @@ impl From<segment_builder::DocumentInsertError> for DocumentInsertError {
     }
 }
 
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+pub struct TermDictionaryId(u32);
+
+
+pub struct TermDictionary {
+    parent_id: Option<TermDictionaryId>,
+    dictionary: HashMap<Term, TermId>,
+}
+
 pub struct RocksDBStore {
-    schema: Arc<Schema>,
     db: DB,
-    term_dictionary: TermDictionaryManager,
-    segments: SegmentManager,
-    document_index: DocumentIndexManager,
+    next_field_id: AtomicUSize,
+    next_segment_id: AtomicUSize,
+    next_term_dictionary_id: AtomicUSize,
 }
 
 impl RocksDBStore {
     pub fn create<P: AsRef<Path>>(path: P) -> Result<RocksDBStore, String> {
         let mut opts = Options::default();
-        opts.set_merge_operator("merge operator", merge_keys);
         opts.create_if_missing(true);
         let db = try!(DB::open(&opts, path));
 
-        // Schema
-        let schema = Schema::new();
-        let schema_encoded = match serde_json::to_string(&schema) {
-            Ok(schema_encoded) => schema_encoded,
-            Err(e) => return Err(format!("schema encode error: {:?}", e).into()),
-        };
-        try!(db.put(b".schema", schema_encoded.as_bytes()));
-
-        // Segment manager
-        let segments = try!(SegmentManager::new(&db));
-
-        // Term dictionary manager
-        let term_dictionary = try!(TermDictionaryManager::new(&db));
-
-        // Document index
-        let document_index = try!(DocumentIndexManager::new(&db));
+        db.put(b".next_field_id", b"1")?;
+        db.put(b".next_segment_id", b"0")?;
+        db.put(b".next_term_dictionary_id", b"1")?;
 
         Ok(RocksDBStore {
-            schema: Arc::new(schema),
             db: db,
-            term_dictionary: term_dictionary,
-            segments: segments,
-            document_index: document_index,
+            next_field_id: AtomicUSize::new(1),
+            next_segment_id: AtomicUSize::new(0),
+            next_term_dictionary_id: AtomicUSize::new(1),
         })
     }
 
     pub fn open<P: AsRef<Path>>(path: P) -> Result<RocksDBStore, String> {
         let mut opts = Options::default();
-        opts.set_merge_operator("merge operator", merge_keys);
         let db = try!(DB::open(&opts, path));
 
-        let schema = match try!(db.get(b".schema")) {
-            Some(schema) => {
-                let schema = schema.to_utf8().unwrap().to_string();
-                match serde_json::from_str(&schema) {
-                    Ok(schema) => schema,
-                    Err(e) => return Err(format!("schema parse error: {:?}", e).into()),
-                }
+        let next_field_id = match db.get(b".next_field_id")? {
+            Some(id) => {
+                id.to_utf8().unwrap().parse::<usize>().unwrap()
             }
-            None => return Err("unable to find schema in store".into()),
+            None => 1,  // TODO: error
         };
 
-        // Segment manager
-        let segments = try!(SegmentManager::open(&db));
+        let next_segment_id = match db.get(b".next_segment_id")? {
+            Some(id) => {
+                id.to_utf8().unwrap().parse::<usize>().unwrap()
+            }
+            None => 1,  // TODO: error
+        };
 
-        // Term dictionary manager
-        let term_dictionary = try!(TermDictionaryManager::open(&db));
-
-        // Document index
-        let document_index = try!(DocumentIndexManager::open(&db));
+        let next_term_dictionary_id = match db.get(b".next_term_dictionary_id")? {
+            Some(id) => {
+                id.to_utf8().unwrap().parse::<usize>().unwrap()
+            }
+            None => 1,  // TODO: error
+        };
 
         Ok(RocksDBStore {
-            schema: Arc::new(schema),
             db: db,
-            term_dictionary: term_dictionary,
-            segments: segments,
-            document_index: document_index,
+            next_segment_id: AtomicUSize::new(next_segment_id),
+            next_term_dictionary_id: AtomicUSize::new(next_term_dictionary_id),
         })
     }
 
@@ -190,58 +123,53 @@ impl RocksDBStore {
         self.db.path()
     }
 
-    pub fn add_field(&mut self, name: String, field_type: FieldType, field_flags: FieldFlags) -> Result<FieldRef, AddFieldError> {
-        let mut schema_copy = (*self.schema).clone();
-        let field_ref = try!(schema_copy.add_field(name, field_type, field_flags));
-        self.schema = Arc::new(schema_copy);
-
-        // FIXME: How do we throw this error?
-        self.db.put(b".schema", serde_json::to_string(&*self.schema).unwrap().as_bytes()).unwrap();
-
-        Ok(field_ref)
+    pub fn new_field_id(&self) -> Result<FieldId, rocksdb::Error> {
+        let field_id = self.next_field_id.fetch_add(1, Ordering::SeqCst) as u32;
+        self.db.put(b".next_field_id", (field_id + 1).to_string().as_bytes())?;
+        Ok(field_id)
     }
 
-    pub fn remove_field(&mut self, field_ref: &FieldRef) -> bool {
-        let mut schema_copy = (*self.schema).clone();
-        let field_removed = schema_copy.remove_field(field_ref);
+    pub fn new_segment_id(&self) -> Result<SegmentId, rocksdb::Error> {
+        let segment_id = self.next_segment_id.fetch_add(1, Ordering::SeqCst) as u32;
+        self.db.put(b".next_segment_id", (segment_id + 1).to_string().as_bytes())?;
+        Ok(segment_id)
+    }
 
-        if field_removed {
-            self.schema = Arc::new(schema_copy);
+    pub fn new_term_dictionary_id(&self) -> Result<TermDictionaryId, rocksdb::Error> {
+        let term_dictionary_id = self.next_segment_id.fetch_add(1, Ordering::SeqCst) as u32;
+        self.db.put(b".next_term_dictionary_id", (term_dictionary_id + 1).to_string().as_bytes())?;
+        Ok(term_dictionary_id)
+    }
 
-            // FIXME: How do we throw this error?
-            self.db.put(b".schema", serde_json::to_string(&*self.schema).unwrap().as_bytes()).unwrap();
-        }
+    pub fn add_field(&mut self, name: String, field_type: FieldType, field_flags: FieldFlags) -> Result<FieldId, AddFieldError> {
+        unimplemented!()
+    }
 
-        field_removed
+    pub fn delete_field(&mut self, field_ref: &FieldRef) -> bool {
+        unimplemented!()
     }
 
     pub fn insert_or_update_document(&self, doc: &Document) -> Result<(), DocumentInsertError> {
         // Build segment in memory
         let mut builder = segment_builder::SegmentBuilder::new();
-        let doc_key = doc.key.clone();
-        try!(builder.add_document(doc));
+        builder.add_document(doc)?;
 
         // Write the segment
-        let segment = try!(self.write_segment(&builder));
-
-        // Update document index
-        let doc_ref = DocRef::from_segment_ord(segment, 0);
-        try!(self.document_index.insert_or_replace_key(&self.db, &doc_key.as_bytes().iter().cloned().collect(), doc_ref));
+        let _ = self.write_segment(&builder)?;
 
         Ok(())
     }
 
-    pub fn write_segment(&self, builder: &segment_builder::SegmentBuilder) -> Result<u32, rocksdb::Error> {
+    pub fn write_segment(&self, builder: &segment_builder::SegmentBuilder) -> Result<SegmentId, rocksdb::Error> {
         // Allocate a segment ID
-        let segment = try!(self.segments.new_segment(&self.db));
+        let segment_id = self.new_segment_id(&self.db)?;
 
         // Start write batch
-        let mut write_batch = WriteBatch::default();
+        let mut write_batch = WriteBatch::new();
 
         // Set segment active flag, this will activate the segment as soon as the
         // write batch is written
-        let kb = KeyBuilder::segment_active(segment);
-        try!(write_batch.put(&kb.key(), b""));
+        write_batch.put(&Key::segment_active(segment_id) , b"")?;
 
         // Merge the term dictionary
         // Writes new terms to disk and generates mapping between the builder's term dictionary and the real one
@@ -252,25 +180,27 @@ impl RocksDBStore {
         }
 
         // Write term directories
-        for (&(field_ref, term_ref), term_directory) in builder.term_directories.iter() {
-            let new_term_ref = term_dictionary_map.get(&term_ref).expect("TermRef not in term_dictionary_map");
+        for (&(field_id, term_id), term_directory) in builder.term_directories.iter() {
+            let new_term_id = term_dictionary_map.get(&term_id).expect("TermRef not in term_dictionary_map");
 
             // Serialise
             let mut term_directory_bytes = Vec::new();
             term_directory.serialize_into(&mut term_directory_bytes).unwrap();
 
             // Write
-            let kb = KeyBuilder::segment_dir_list(segment, field_ref.ord(), new_term_ref.ord());
-            try!(write_batch.put(&kb.key(), &term_directory_bytes));
+            write_batch.put(&Key::term_directory(field_id, new_term_id, segment_id) , &term_directory_bytes)?;
         }
 
         // Write stored fields
+        /*
         for (&(field_ref, doc_id, ref value_type), value) in builder.stored_field_values.iter() {
             let kb = KeyBuilder::stored_field_value(segment, doc_id, field_ref.ord(), value_type);
             try!(write_batch.put(&kb.key(), value));
         }
+        */
 
         // Write statistics
+        /*
         for (name, value) in builder.statistics.iter() {
             let kb = KeyBuilder::segment_stat(segment, name);
 
@@ -278,18 +208,18 @@ impl RocksDBStore {
             LittleEndian::write_i64(&mut value_bytes, *value);
             try!(write_batch.put(&kb.key(), &value_bytes));
         }
+        */
 
         // Write data
-        try!(self.db.write(write_batch));
+        self.db.write(write_batch.inner);
 
-        Ok(segment)
+        Ok(segment_id)
     }
 
-    pub fn remove_document_by_key(&self, doc_key: &str) -> Result<bool, rocksdb::Error> {
-        match try!(self.document_index.delete_document_by_key(&self.db, &doc_key.as_bytes().iter().cloned().collect())) {
-            Some(_doc_ref) => Ok(true),
-            None => Ok(false),
-        }
+    pub fn delete_document(&self, doc_id: DocId) -> Result<bool, rocksdb::Error> {
+        // Release unique keys
+
+        // Mark document as deleted
     }
 
     pub fn reader<'a>(&'a self) -> RocksDBReader<'a> {
@@ -335,15 +265,9 @@ pub struct RocksDBReader<'a> {
 }
 
 impl<'a> RocksDBReader<'a> {
-    pub fn schema(&self) -> &Schema {
-        &self.store.schema
-    }
 
-    pub fn contains_document_key(&self, doc_key: &str) -> bool {
-        // TODO: use snapshot
-        self.store.document_index.contains_document_key(&doc_key.as_bytes().iter().cloned().collect())
-    }
 
+/*
     pub fn read_stored_field(&self, field_ref: FieldRef, doc_ref: DocRef) -> Result<Option<FieldValue>, StoredFieldReadError> {
         let field_info = match self.schema().get(&field_ref) {
             Some(field_info) => field_info,
@@ -398,6 +322,7 @@ impl<'a> RocksDBReader<'a> {
             None => Ok(None),
         }
     }
+*/
 }
 
 #[cfg(test)]

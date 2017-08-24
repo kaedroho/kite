@@ -1,0 +1,7 @@
+d/{segment}/{field}/{doc_id} = document field value (cached)
+x/{segment}/{id} = deleted document (in memory)
+h/{field}/{segment} = has field directory (cached)
+d/{id} = term dictionary (in memory)
+i/{field}/{term}/{segment} = term directory (cached)
+k/{name}/{value} = unique key (in memory)
+s/{type}/.. = precomputed statistic (cached)

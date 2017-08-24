@@ -1,21 +1,8 @@
 use chrono::{DateTime, Utc, Timelike};
 use byteorder::{WriteBytesExt, LittleEndian};
 
-
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
-pub struct TermRef(u32);
-
-
-impl TermRef {
-    pub fn new(ord: u32) -> TermRef {
-        TermRef(ord)
-    }
-
-    pub fn ord(&self) -> u32 {
-        self.0
-    }
-}
-
+pub struct TermId(u32);
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Hash)]
 pub struct Term(Vec<u8>);
