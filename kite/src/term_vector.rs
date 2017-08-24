@@ -1,11 +1,13 @@
 use std::ops::{Deref, DerefMut};
 use std::collections::HashMap;
 
+use roaring::RoaringBitmap;
+
 use term::Term;
 use token::Token;
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct TermVector(HashMap<Term, Vec<u32>>);
+pub struct TermVector(HashMap<Term, RoaringBitmap>);
 
 impl TermVector {
     pub fn new() -> TermVector {
@@ -14,15 +16,15 @@ impl TermVector {
 }
 
 impl Deref for TermVector {
-    type Target = HashMap<Term, Vec<u32>>;
+    type Target = HashMap<Term, RoaringBitmap>;
 
-    fn deref(&self) -> &HashMap<Term, Vec<u32>> {
+    fn deref(&self) -> &HashMap<Term, RoaringBitmap> {
         &self.0
     }
 }
 
 impl DerefMut for TermVector {
-    fn deref_mut(&mut self) -> &mut HashMap<Term, Vec<u32>> {
+    fn deref_mut(&mut self) -> &mut HashMap<Term, RoaringBitmap> {
         &mut self.0
     }
 }
@@ -32,8 +34,8 @@ impl Into<TermVector> for Vec<Token> {
         let mut map = HashMap::new();
 
         for token in self {
-            let mut positions = map.entry(token.term).or_insert_with(Vec::new);
-            positions.push(token.position);
+            let mut positions = map.entry(token.term).or_insert_with(RoaringBitmap::new);
+            positions.insert(token.position);
         }
 
          TermVector(map)
