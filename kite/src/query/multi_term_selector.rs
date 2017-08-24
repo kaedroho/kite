@@ -1,6 +1,6 @@
 use term::Term;
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq)]
 pub enum MultiTermSelector {
     Prefix(String),
 }

@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use term::Term;
 use token::Token;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct TermVector(HashMap<Term, Vec<u32>>);
 
 impl TermVector {

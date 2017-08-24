@@ -1,6 +1,6 @@
 use similarity::SimilarityModel;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct TermScorer {
     pub similarity_model: SimilarityModel,
     pub boost: f32,

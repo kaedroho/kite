@@ -32,7 +32,7 @@ impl DocRef {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub enum FieldValue {
     String(String),
     Integer(i64),
@@ -76,7 +76,7 @@ impl FieldValue {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct Document {
     pub key: String,
     pub indexed_fields: FnvHashMap<FieldRef, TermVector>,

@@ -6,7 +6,7 @@ use schema::FieldRef;
 use query::multi_term_selector::MultiTermSelector;
 use query::term_scorer::TermScorer;
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq)]
 pub enum Query {
     /// Matches all documents, assigning the specified score to each one
     All {
