@@ -6,7 +6,7 @@ use collectors::{Collector, DocumentMatch};
 /// An f32 that cannot be NaN.
 /// We need to order documents by score but NaN cannot be ordered, so we convert all scores into
 /// Realf32 first, handling any invalid values while doing that conversion
-#[derive(Copy, Clone, PartialEq, PartialOrd)]
+#[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
 struct RealF32(f32);
 
 impl RealF32 {
@@ -27,7 +27,7 @@ impl Ord for RealF32 {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 struct ScoredDocument {
     id: u64,
     score: RealF32,
@@ -45,6 +45,7 @@ impl PartialOrd for ScoredDocument {
     }
 }
 
+#[derive(Debug)]
 pub struct TopScoreCollector {
     max_docs: usize,
     heap: BinaryHeap<ScoredDocument>,

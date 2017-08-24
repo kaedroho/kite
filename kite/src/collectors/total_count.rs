@@ -1,5 +1,6 @@
 use collectors::{Collector, DocumentMatch};
 
+#[derive(Debug)]
 pub struct TotalCountCollector {
     total_count: u64,
 }
