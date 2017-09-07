@@ -190,7 +190,7 @@ impl RocksDBStore {
                 }
 
 
-                let mut stat = statistics.entry(statistic_name).or_insert(0);
+                let stat = statistics.entry(statistic_name).or_insert(0);
                 *stat += LittleEndian::read_i64(unsafe { &iter.value_inner().unwrap() });
 
                 iter.next();

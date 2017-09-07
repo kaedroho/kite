@@ -35,19 +35,19 @@ fn run_boolean_query<S: Segment>(boolean_query: &Vec<BooleanQueryOp>, is_negated
             }
             BooleanQueryOp::And => {
                 let b = stack.pop().expect("boolean query executor: stack underflow");
-                let mut a = stack.last_mut().expect("boolean query executor: stack underflow");
+                let a = stack.last_mut().expect("boolean query executor: stack underflow");
 
                 a.intersect_with(&b);
             }
             BooleanQueryOp::Or => {
                 let b = stack.pop().expect("boolean query executor: stack underflow");
-                let mut a = stack.last_mut().expect("boolean query executor: stack underflow");
+                let a = stack.last_mut().expect("boolean query executor: stack underflow");
 
                 a.union_with(&b);
             }
             BooleanQueryOp::AndNot => {
                 let b = stack.pop().expect("boolean query executor: stack underflow");
-                let mut a = stack.last_mut().expect("boolean query executor: stack underflow");
+                let a = stack.last_mut().expect("boolean query executor: stack underflow");
 
                 a.difference_with(&b);
             }
@@ -76,7 +76,7 @@ fn run_boolean_query<S: Segment>(boolean_query: &Vec<BooleanQueryOp>, is_negated
     Ok(matches)
 }
 
-fn score_doc<S: Segment, R: StatisticsReader>(doc_id: u16, score_function: &Vec<ScoreFunctionOp>, segment: &S, mut stats: &mut R) -> Result<f32, String> {
+fn score_doc<S: Segment, R: StatisticsReader>(doc_id: u16, score_function: &Vec<ScoreFunctionOp>, segment: &S, stats: &mut R) -> Result<f32, String> {
     // Execute score function
     let mut stack = Vec::new();
     for op in score_function.iter() {
@@ -154,7 +154,7 @@ fn score_doc<S: Segment, R: StatisticsReader>(doc_id: u16, score_function: &Vec<
     Ok(stack.pop().expect("document scorer: stack underflow"))
 }
 
-fn search_segment<C: Collector, S: Segment, R: StatisticsReader>(collector: &mut C, plan: &SearchPlan, segment: &S, mut stats: &mut R) -> Result<(), String> {
+fn search_segment<C: Collector, S: Segment, R: StatisticsReader>(collector: &mut C, plan: &SearchPlan, segment: &S, stats: &mut R) -> Result<(), String> {
     let matches = try!(run_boolean_query(&plan.boolean_query, plan.boolean_query_is_negated, segment));
 
     // Score documents and pass to collector

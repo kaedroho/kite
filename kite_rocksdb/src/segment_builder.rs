@@ -69,7 +69,7 @@ impl SegmentBuilder {
                 let term_id = self.get_term_id(term);
 
                 // Term frequency
-                let mut term_frequency = term_frequencies.entry(term_id).or_insert(0);
+                let term_frequency = term_frequencies.entry(term_id).or_insert(0);
                 *term_frequency += frequency;
 
                 // Write directory list
@@ -90,7 +90,7 @@ impl SegmentBuilder {
 
                 // Increment term document frequency
                 let stat_name = KeyBuilder::segment_stat_term_doc_frequency_stat_name(field_id.0, term_id.0);
-                let mut stat = self.statistics.entry(stat_name).or_insert(0);
+                let stat = self.statistics.entry(stat_name).or_insert(0);
                 *stat += 1;
             }
 
@@ -105,14 +105,14 @@ impl SegmentBuilder {
             // Increment total field docs
             {
                 let stat_name = KeyBuilder::segment_stat_total_field_docs_stat_name(field_id.0);
-                let mut stat = self.statistics.entry(stat_name).or_insert(0);
+                let stat = self.statistics.entry(stat_name).or_insert(0);
                 *stat += 1;
             }
 
             // Increment total field tokens
             {
                 let stat_name = KeyBuilder::segment_stat_total_field_tokens_stat_name(field_id.0);
-                let mut stat = self.statistics.entry(stat_name).or_insert(0);
+                let stat = self.statistics.entry(stat_name).or_insert(0);
                 *stat += field_token_count as i64;
             }
         }
@@ -124,7 +124,7 @@ impl SegmentBuilder {
 
         // Increment total docs
         {
-            let mut stat = self.statistics.entry(b"total_docs".to_vec()).or_insert(0);
+            let stat = self.statistics.entry(b"total_docs".to_vec()).or_insert(0);
             *stat += 1;
         }
 

@@ -34,7 +34,7 @@ impl Into<TermVector> for Vec<Token> {
         let mut map = HashMap::new();
 
         for token in self {
-            let mut positions = map.entry(token.term).or_insert_with(RoaringBitmap::new);
+            let positions = map.entry(token.term).or_insert_with(RoaringBitmap::new);
             positions.insert(token.position);
         }
 
