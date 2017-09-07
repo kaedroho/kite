@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use kite::{Document, Term, TermId};
 use kite::schema::FieldId;
-use kite::segment::Segment;
+use kite::segment::{SegmentId, Segment};
 use byteorder::{LittleEndian, WriteBytesExt};
 use roaring::RoaringBitmap;
 use fnv::FnvHashMap;
@@ -133,8 +133,8 @@ impl SegmentBuilder {
 }
 
 impl Segment for SegmentBuilder {
-    fn id(&self) -> u32 {
-        0
+    fn id(&self) -> SegmentId {
+        SegmentId(0)
     }
 
     fn load_statistic(&self, stat_name: &[u8]) -> Result<Option<i64>, String> {

@@ -4,19 +4,20 @@ use fnv::FnvHashMap;
 
 use term_vector::TermVector;
 use schema::FieldId;
+use segment::SegmentId;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
-pub struct DocId(pub u32, pub u16);
+pub struct DocId(pub SegmentId, pub u16);
 
 impl DocId {
     pub fn as_u64(&self) -> u64 {
-        (self.0 as u64) << 16 | (self.1 as u64)
+        ((self.0).0 as u64) << 16 | (self.1 as u64)
     }
 
     pub fn from_u64(val: u64) -> DocId {
         let segment = (val >> 16) & 0xFFFFFFFF;
         let local_id = val & 0xFFFF;
-        DocId(segment as u32, local_id as u16)
+        DocId(SegmentId(segment as u32), local_id as u16)
     }
 }
 

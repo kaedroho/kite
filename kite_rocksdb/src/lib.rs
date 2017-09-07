@@ -25,6 +25,7 @@ use rocksdb::{DB, WriteBatch, Options, MergeOperands, Snapshot};
 use kite::{Document, DocId, TermId};
 use kite::document::FieldValue;
 use kite::schema::{Schema, FieldType, FieldFlags, FieldId, AddFieldError};
+use kite::segment::SegmentId;
 use byteorder::{ByteOrder, LittleEndian};
 use chrono::{NaiveDateTime, DateTime, Utc};
 use fnv::FnvHashMap;
@@ -225,7 +226,7 @@ impl RocksDBStore {
         let segment = try!(self.write_segment(&builder));
 
         // Update document index
-        let doc_id = DocId(segment, 0);
+        let doc_id = DocId(SegmentId(segment), 0);
         try!(self.document_index.insert_or_replace_key(&self.db, &doc_key.as_bytes().iter().cloned().collect(), doc_id));
 
         Ok(())
@@ -350,7 +351,7 @@ impl<'a> RocksDBReader<'a> {
             None => return Err(StoredFieldReadError::InvalidFieldId(field_id)),
         };
 
-        let kb = KeyBuilder::stored_field_value(doc_id.0, doc_id.1, field_id.0, b"val");
+        let kb = KeyBuilder::stored_field_value((doc_id.0).0, doc_id.1, field_id.0, b"val");
 
         match try!(self.snapshot.get(&kb.key())) {
             Some(value) => {

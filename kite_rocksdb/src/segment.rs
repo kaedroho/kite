@@ -1,6 +1,6 @@
 use std::io::Cursor;
 
-use kite::segment::Segment;
+use kite::segment::{SegmentId, Segment};
 use kite::schema::FieldId;
 use kite::term::TermId;
 use roaring::RoaringBitmap;
@@ -24,8 +24,8 @@ impl<'a> RocksDBSegment<'a> {
 }
 
 impl<'a> Segment for RocksDBSegment<'a> {
-    fn id(&self) -> u32 {
-        self.id
+    fn id(&self) -> SegmentId {
+        SegmentId(self.id)
     }
 
     fn load_statistic(&self, stat_name: &[u8]) -> Result<Option<i64>, String> {

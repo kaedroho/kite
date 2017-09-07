@@ -5,6 +5,7 @@ use std::io::Cursor;
 use rocksdb::{self, DB, WriteBatch};
 use roaring::RoaringBitmap;
 use kite::document::DocId;
+use kite::segment::SegmentId;
 use byteorder::{ByteOrder, LittleEndian};
 use fnv::FnvHashMap;
 
@@ -40,7 +41,7 @@ impl DocumentIndexManager {
             let v = iter.value().unwrap();
             let segment = LittleEndian::read_u32(&v[0..4]);
             let ord = LittleEndian::read_u16(&v[4..6]);
-            let doc_id = DocId(segment, ord);
+            let doc_id = DocId(SegmentId(segment), ord);
 
             primary_key_index.insert(k[1..].to_vec(), doc_id);
 
@@ -53,13 +54,13 @@ impl DocumentIndexManager {
     }
 
     fn delete_document_by_id_unchecked(&self, write_batch: &mut WriteBatch, doc_id: DocId) -> Result<(), rocksdb::Error> {
-        let kb = KeyBuilder::segment_del_list(doc_id.0);
+        let kb = KeyBuilder::segment_del_list((doc_id.0).0);
         let mut previous_doc_id_bytes = [0; 2];
         LittleEndian::write_u16(&mut previous_doc_id_bytes, doc_id.1);
         try!(write_batch.merge(&kb.key(), &previous_doc_id_bytes));
 
         // Increment deleted docs
-        let kb = KeyBuilder::segment_stat(doc_id.0, b"deleted_docs");
+        let kb = KeyBuilder::segment_stat((doc_id.0).0, b"deleted_docs");
         let mut inc_bytes = [0; 8];
         LittleEndian::write_i64(&mut inc_bytes, 1);
         try!(write_batch.merge(&kb.key(), &inc_bytes));
@@ -74,7 +75,7 @@ impl DocumentIndexManager {
 
         let kb = KeyBuilder::primary_key_index(key);
         let mut doc_id_bytes = [0; 6];
-        LittleEndian::write_u32(&mut doc_id_bytes, doc_id.0);
+        LittleEndian::write_u32(&mut doc_id_bytes, (doc_id.0).0);
         LittleEndian::write_u16(&mut doc_id_bytes[4..], doc_id.1);
         try!(write_batch.put(&kb.key(), &doc_id_bytes));
 
@@ -122,11 +123,11 @@ impl DocumentIndexManager {
 
         for (key, doc_id) in keys_to_update {
             let new_doc_local_id = doc_id_mapping.get(&doc_id).unwrap();
-            let new_doc_id = DocId(dest_segment, *new_doc_local_id);
+            let new_doc_id = DocId(SegmentId(dest_segment), *new_doc_local_id);
 
             let kb = KeyBuilder::primary_key_index(&key);
             let mut doc_id_bytes = [0; 6];
-            LittleEndian::write_u32(&mut doc_id_bytes, new_doc_id.0);
+            LittleEndian::write_u32(&mut doc_id_bytes, (new_doc_id.0).0);
             LittleEndian::write_u16(&mut doc_id_bytes[4..], new_doc_id.1);
             try!(write_batch.put(&kb.key(), &doc_id_bytes));
 
@@ -142,7 +143,7 @@ impl DocumentIndexManager {
                 Some(bitmap) => {
                     let bitmap = RoaringBitmap::deserialize_from(Cursor::new(&bitmap[..])).unwrap();
                     for doc_id in bitmap.iter() {
-                        let doc_id = DocId(*source_segment, doc_id as u16);
+                        let doc_id = DocId(SegmentId(*source_segment), doc_id as u16);
                         let new_doc_id = doc_id_mapping.get(&doc_id).unwrap();
                         deletion_list.insert(*new_doc_id as u32);
                     }

@@ -37,7 +37,7 @@ impl RocksDBStore {
 
         for segment in self.segments.iter_active(&reader) {
             let stats = try!(SegmentStatistics::read(&segment));
-            segment_stats.push((segment.id(), stats));
+            segment_stats.push((segment.id().0, stats));
         }
 
         Ok(segment_stats)
