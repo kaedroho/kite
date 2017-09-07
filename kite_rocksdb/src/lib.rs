@@ -225,7 +225,7 @@ impl RocksDBStore {
         let segment = try!(self.write_segment(&builder));
 
         // Update document index
-        let doc_id = DocId::from_segment_ord(segment, 0);
+        let doc_id = DocId(segment, 0);
         try!(self.document_index.insert_or_replace_key(&self.db, &doc_key.as_bytes().iter().cloned().collect(), doc_id));
 
         Ok(())
@@ -260,13 +260,13 @@ impl RocksDBStore {
             term_directory.serialize_into(&mut term_directory_bytes).unwrap();
 
             // Write
-            let kb = KeyBuilder::segment_dir_list(segment, field_id.ord(), new_term_id.ord());
+            let kb = KeyBuilder::segment_dir_list(segment, field_id.0, new_term_id.0);
             try!(write_batch.put(&kb.key(), &term_directory_bytes));
         }
 
         // Write stored fields
         for (&(field_id, doc_id, ref value_type), value) in builder.stored_field_values.iter() {
-            let kb = KeyBuilder::stored_field_value(segment, doc_id, field_id.ord(), value_type);
+            let kb = KeyBuilder::stored_field_value(segment, doc_id, field_id.0, value_type);
             try!(write_batch.put(&kb.key(), value));
         }
 
@@ -350,7 +350,7 @@ impl<'a> RocksDBReader<'a> {
             None => return Err(StoredFieldReadError::InvalidFieldId(field_id)),
         };
 
-        let kb = KeyBuilder::stored_field_value(doc_id.segment(), doc_id.ord(), field_id.ord(), b"val");
+        let kb = KeyBuilder::stored_field_value(doc_id.0, doc_id.1, field_id.0, b"val");
 
         match try!(self.snapshot.get(&kb.key())) {
             Some(value) => {

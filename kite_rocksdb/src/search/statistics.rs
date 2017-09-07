@@ -49,7 +49,7 @@ impl<'a> StatisticsReader for RocksDBStatisticsReader<'a> {
             return Ok(*val);
         }
 
-        let stat_name = KeyBuilder::segment_stat_total_field_docs_stat_name(field_id.ord());
+        let stat_name = KeyBuilder::segment_stat_total_field_docs_stat_name(field_id.0);
         let val = try!(self.get_statistic(&stat_name));
         self.total_docs.insert(field_id, val);
         Ok(val)
@@ -60,7 +60,7 @@ impl<'a> StatisticsReader for RocksDBStatisticsReader<'a> {
             return Ok(*val);
         }
 
-        let stat_name = KeyBuilder::segment_stat_total_field_tokens_stat_name(field_id.ord());
+        let stat_name = KeyBuilder::segment_stat_total_field_tokens_stat_name(field_id.0);
         let val = try!(self.get_statistic(&stat_name));
         self.total_tokens.insert(field_id, val);
         Ok(val)
@@ -71,7 +71,7 @@ impl<'a> StatisticsReader for RocksDBStatisticsReader<'a> {
             return Ok(*val);
         }
 
-        let stat_name = KeyBuilder::segment_stat_term_doc_frequency_stat_name(field_id.ord(), term_id.ord());
+        let stat_name = KeyBuilder::segment_stat_term_doc_frequency_stat_name(field_id.0, term_id.0);
         let val = try!(self.get_statistic(&stat_name));
         self.term_document_frequencies.insert((field_id, term_id), val);
         Ok(val)

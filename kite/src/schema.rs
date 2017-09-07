@@ -95,7 +95,7 @@ impl FieldInfo {
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
-pub struct FieldId(u32);
+pub struct FieldId(pub u32);
 
 // FieldId needs to be serialised as a string as it's used as a mapping key
 impl Serialize for FieldId {
@@ -123,23 +123,13 @@ impl<'a> Deserialize<'a> for FieldId {
                 where E: ::serde::de::Error
             {
                 match value.parse() {
-                    Ok(value) => Ok(FieldId::new(value)),
+                    Ok(value) => Ok(FieldId(value)),
                     Err(_) => Err(E::invalid_value(::serde::de::Unexpected::Str(value), &"a string containing an integer")),
                 }
             }
         }
 
         deserializer.deserialize_str(Visitor)
-    }
-}
-
-impl FieldId {
-    pub fn new(ord: u32) -> FieldId {
-        FieldId(ord)
-    }
-
-    pub fn ord(&self) -> u32 {
-        self.0
     }
 }
 

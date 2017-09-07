@@ -86,7 +86,7 @@ impl RocksDBStore {
                 // Merge term directory into the new one (and remap the doc ids)
                 let bitmap = RoaringBitmap::deserialize_from(Cursor::new(iter.value().unwrap())).unwrap();
                 for doc_id in bitmap.iter() {
-                    let doc_id = DocId::from_segment_ord(segment, doc_id as u16);
+                    let doc_id = DocId(segment, doc_id as u16);
                     let new_doc_id = doc_id_mapping.get(&doc_id).unwrap();
                     current_td.insert(*new_doc_id as u32);
                 }
@@ -142,7 +142,7 @@ impl RocksDBStore {
                 }
 
                 // Remap doc id
-                let doc_id = DocId::from_segment_ord(segment, doc_id as u16);
+                let doc_id = DocId(segment, doc_id as u16);
                 let new_doc_id = doc_id_mapping.get(&doc_id).unwrap();
 
                 // Write value into new segment
@@ -260,7 +260,7 @@ impl RocksDBStore {
                     return Err(SegmentMergeError::TooManyDocs);
                 }
 
-                let from = DocId::from_segment_ord(*source_segment, source_ord as u16);
+                let from = DocId(*source_segment, source_ord as u16);
                 doc_id_mapping.insert(from, current_ord as u16);
                 current_ord += 1;
             }

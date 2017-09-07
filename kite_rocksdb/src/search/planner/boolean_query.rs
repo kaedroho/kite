@@ -444,12 +444,12 @@ mod builder_tests {
     fn test_push_term_directory() {
         let mut builder = BooleanQueryBuilder::new();
 
-        builder.push_term_directory(FieldId::new(1), TermId::new(1));
+        builder.push_term_directory(FieldId(1), TermId(1));
 
         let (query, negated) = builder.build();
 
         assert_eq!(query, vec![
-            BooleanQueryOp::PushTermDirectory(FieldId::new(1), TermId::new(1)),
+            BooleanQueryOp::PushTermDirectory(FieldId(1), TermId(1)),
         ]);
         assert_eq!(negated, false);
     }
@@ -472,15 +472,15 @@ mod builder_tests {
     fn test_and_combinator() {
         let mut builder = BooleanQueryBuilder::new();
 
-        builder.push_term_directory(FieldId::new(1), TermId::new(1));
-        builder.push_term_directory(FieldId::new(1), TermId::new(2));
+        builder.push_term_directory(FieldId(1), TermId(1));
+        builder.push_term_directory(FieldId(1), TermId(2));
         builder.and_combinator();
 
         let (query, negated) = builder.build();
 
         assert_eq!(query, vec![
-            BooleanQueryOp::PushTermDirectory(FieldId::new(1), TermId::new(1)),
-            BooleanQueryOp::PushTermDirectory(FieldId::new(1), TermId::new(2)),
+            BooleanQueryOp::PushTermDirectory(FieldId(1), TermId(1)),
+            BooleanQueryOp::PushTermDirectory(FieldId(1), TermId(2)),
             BooleanQueryOp::And,
         ]);
         assert_eq!(negated, false);
@@ -490,15 +490,15 @@ mod builder_tests {
     fn test_or_combinator() {
         let mut builder = BooleanQueryBuilder::new();
 
-        builder.push_term_directory(FieldId::new(1), TermId::new(1));
-        builder.push_term_directory(FieldId::new(1), TermId::new(2));
+        builder.push_term_directory(FieldId(1), TermId(1));
+        builder.push_term_directory(FieldId(1), TermId(2));
         builder.or_combinator();
 
         let (query, negated) = builder.build();
 
         assert_eq!(query, vec![
-            BooleanQueryOp::PushTermDirectory(FieldId::new(1), TermId::new(1)),
-            BooleanQueryOp::PushTermDirectory(FieldId::new(1), TermId::new(2)),
+            BooleanQueryOp::PushTermDirectory(FieldId(1), TermId(1)),
+            BooleanQueryOp::PushTermDirectory(FieldId(1), TermId(2)),
             BooleanQueryOp::Or,
         ]);
         assert_eq!(negated, false);
@@ -508,15 +508,15 @@ mod builder_tests {
     fn test_andnot_combinator() {
         let mut builder = BooleanQueryBuilder::new();
 
-        builder.push_term_directory(FieldId::new(1), TermId::new(1));
-        builder.push_term_directory(FieldId::new(1), TermId::new(2));
+        builder.push_term_directory(FieldId(1), TermId(1));
+        builder.push_term_directory(FieldId(1), TermId(2));
         builder.andnot_combinator();
 
         let (query, negated) = builder.build();
 
         assert_eq!(query, vec![
-            BooleanQueryOp::PushTermDirectory(FieldId::new(1), TermId::new(1)),
-            BooleanQueryOp::PushTermDirectory(FieldId::new(1), TermId::new(2)),
+            BooleanQueryOp::PushTermDirectory(FieldId(1), TermId(1)),
+            BooleanQueryOp::PushTermDirectory(FieldId(1), TermId(2)),
             BooleanQueryOp::AndNot,
         ]);
         assert_eq!(negated, false);
@@ -528,7 +528,7 @@ mod builder_tests {
         let mut builder = BooleanQueryBuilder::new();
 
         builder.push_full();
-        builder.push_term_directory(FieldId::new(1), TermId::new(2));
+        builder.push_term_directory(FieldId(1), TermId(2));
         builder.or_combinator();
 
         let (query, negated) = builder.build();
@@ -545,13 +545,13 @@ mod builder_tests {
         let mut builder = BooleanQueryBuilder::new();
 
         builder.push_empty();
-        builder.push_term_directory(FieldId::new(1), TermId::new(2));
+        builder.push_term_directory(FieldId(1), TermId(2));
         builder.or_combinator();
 
         let (query, negated) = builder.build();
 
         assert_eq!(query, vec![
-            BooleanQueryOp::PushTermDirectory(FieldId::new(1), TermId::new(2)),
+            BooleanQueryOp::PushTermDirectory(FieldId(1), TermId(2)),
         ]);
         assert_eq!(negated, false);
     }
@@ -562,13 +562,13 @@ mod builder_tests {
         let mut builder = BooleanQueryBuilder::new();
 
         builder.push_full();
-        builder.push_term_directory(FieldId::new(1), TermId::new(2));
+        builder.push_term_directory(FieldId(1), TermId(2));
         builder.and_combinator();
 
         let (query, negated) = builder.build();
 
         assert_eq!(query, vec![
-            BooleanQueryOp::PushTermDirectory(FieldId::new(1), TermId::new(2)),
+            BooleanQueryOp::PushTermDirectory(FieldId(1), TermId(2)),
         ]);
         assert_eq!(negated, false);
     }
@@ -579,7 +579,7 @@ mod builder_tests {
         let mut builder = BooleanQueryBuilder::new();
 
         builder.push_empty();
-        builder.push_term_directory(FieldId::new(1), TermId::new(2));
+        builder.push_term_directory(FieldId(1), TermId(2));
         builder.and_combinator();
 
         let (query, negated) = builder.build();
@@ -597,13 +597,13 @@ mod builder_tests {
         let mut builder = BooleanQueryBuilder::new();
 
         builder.push_full();
-        builder.push_term_directory(FieldId::new(1), TermId::new(2));
+        builder.push_term_directory(FieldId(1), TermId(2));
         builder.andnot_combinator();
 
         let (query, negated) = builder.build();
 
         assert_eq!(query, vec![
-            BooleanQueryOp::PushTermDirectory(FieldId::new(1), TermId::new(2)),
+            BooleanQueryOp::PushTermDirectory(FieldId(1), TermId(2)),
         ]);
         assert_eq!(negated, true);
     }
@@ -615,7 +615,7 @@ mod builder_tests {
         let mut builder = BooleanQueryBuilder::new();
 
         builder.push_empty();
-        builder.push_term_directory(FieldId::new(1), TermId::new(2));
+        builder.push_term_directory(FieldId(1), TermId(2));
         builder.andnot_combinator();
 
         let (query, negated) = builder.build();
@@ -632,7 +632,7 @@ mod builder_tests {
         // (basically: we're filtering a set by a full set, so there can't be anything left)
         let mut builder = BooleanQueryBuilder::new();
 
-        builder.push_term_directory(FieldId::new(1), TermId::new(2));
+        builder.push_term_directory(FieldId(1), TermId(2));
         builder.push_full();
         builder.andnot_combinator();
 
@@ -650,14 +650,14 @@ mod builder_tests {
         // (basically: we're filtering a set by an empty set, leaving the set untouched)
         let mut builder = BooleanQueryBuilder::new();
 
-        builder.push_term_directory(FieldId::new(1), TermId::new(2));
+        builder.push_term_directory(FieldId(1), TermId(2));
         builder.push_empty();
         builder.andnot_combinator();
 
         let (query, negated) = builder.build();
 
         assert_eq!(query, vec![
-            BooleanQueryOp::PushTermDirectory(FieldId::new(1), TermId::new(2)),
+            BooleanQueryOp::PushTermDirectory(FieldId(1), TermId(2)),
         ]);
         assert_eq!(negated, false);
     }
@@ -669,10 +669,10 @@ mod builder_tests {
 
         // (ALL NOT TD(1, 2)) OR (TD(1,1) AND (TD(1, 3) AND NOT ALL))
         builder.push_full();
-        builder.push_term_directory(FieldId::new(1), TermId::new(2));
+        builder.push_term_directory(FieldId(1), TermId(2));
         builder.andnot_combinator();
-        builder.push_term_directory(FieldId::new(1), TermId::new(1));
-        builder.push_term_directory(FieldId::new(1), TermId::new(3));
+        builder.push_term_directory(FieldId(1), TermId(1));
+        builder.push_term_directory(FieldId(1), TermId(3));
         builder.push_full();
         builder.andnot_combinator();
         builder.and_combinator();
@@ -682,7 +682,7 @@ mod builder_tests {
 
         // Should be optimised down to just "NOT TD(1, 2)"
         assert_eq!(query, vec![
-            BooleanQueryOp::PushTermDirectory(FieldId::new(1), TermId::new(2)),
+            BooleanQueryOp::PushTermDirectory(FieldId(1), TermId(2)),
         ]);
         assert_eq!(negated, true);
     }

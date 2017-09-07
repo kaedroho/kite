@@ -56,7 +56,7 @@ impl TermDictionaryManager {
                 break;
             }
 
-            let term_id = TermId::new(str::from_utf8(unsafe { &iter.value_inner().unwrap() }).unwrap().parse::<u32>().unwrap());
+            let term_id = TermId(str::from_utf8(unsafe { &iter.value_inner().unwrap() }).unwrap().parse::<u32>().unwrap());
             terms.insert(Term::from_bytes(&k[1..]), term_id);
 
             iter.next();
@@ -98,7 +98,7 @@ impl TermDictionaryManager {
         try!(db.put(b".next_term_id", (next_term_id + 1).to_string().as_bytes()));
 
         // Create term ref
-        let term_id = TermId::new(next_term_id);
+        let term_id = TermId(next_term_id);
 
         // Get write lock
         // Note: We have a separate lock so we don't need to keep an exclusive

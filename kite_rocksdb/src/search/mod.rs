@@ -100,7 +100,7 @@ fn score_doc<S: Segment, R: StatisticsReader>(doc_id: u16, score_function: &Vec<
 
                             // Read term frequency
                             let mut value_type = vec![b't', b'f'];
-                            value_type.extend(term_id.ord().to_string().as_bytes());
+                            value_type.extend(term_id.0.to_string().as_bytes());
                             let term_frequency_raw = try!(segment.load_stored_field_value_raw(doc_id, field_id, &value_type));
                             let term_frequency = match term_frequency_raw {
                                 Some(value) => LittleEndian::read_i64(&value),

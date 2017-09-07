@@ -43,7 +43,7 @@ impl SegmentBuilder {
         }
 
         // Add the term to the dictionary
-        let term_id = TermId::new(self.current_term_id);
+        let term_id = TermId(self.current_term_id);
         self.current_term_id += 1;
         self.term_dictionary.insert(term.clone(), term_id);
 
@@ -58,7 +58,7 @@ impl SegmentBuilder {
 
         // Insert indexed fields
         let mut term_frequencies = FnvHashMap::default();
-        for (field, tokens) in doc.indexed_fields.iter() {
+        for (field_id, tokens) in doc.indexed_fields.iter() {
             let mut field_token_count = 0;
 
             for (term, positions) in tokens.iter() {
@@ -73,23 +73,23 @@ impl SegmentBuilder {
                 *term_frequency += frequency;
 
                 // Write directory list
-                self.term_directories.entry((*field, term_id)).or_insert_with(RoaringBitmap::new).insert(doc_id as u32);
+                self.term_directories.entry((*field_id, term_id)).or_insert_with(RoaringBitmap::new).insert(doc_id as u32);
 
                 // Write term frequency
                 // 1 is by far the most common frequency. At search time, we interpret a missing
                 // key as meaning there is a term frequency of 1
                 if frequency != 1 {
                     let mut value_type = vec![b't', b'f'];
-                    value_type.extend(term_id.ord().to_string().as_bytes());
+                    value_type.extend(term_id.0.to_string().as_bytes());
 
                     let mut frequency_bytes: Vec<u8> = Vec::new();
                     frequency_bytes.write_i64::<LittleEndian>(frequency as i64).unwrap();
 
-                    self.stored_field_values.insert((*field, doc_id, value_type), frequency_bytes);
+                    self.stored_field_values.insert((*field_id, doc_id, value_type), frequency_bytes);
                 }
 
                 // Increment term document frequency
-                let stat_name = KeyBuilder::segment_stat_term_doc_frequency_stat_name(field.ord(), term_id.ord());
+                let stat_name = KeyBuilder::segment_stat_term_doc_frequency_stat_name(field_id.0, term_id.0);
                 let mut stat = self.statistics.entry(stat_name).or_insert(0);
                 *stat += 1;
             }
@@ -99,19 +99,19 @@ impl SegmentBuilder {
             let length = ((field_token_count as f32).sqrt() - 1.0) * 3.0;
             let length = if length > 255.0 { 255.0 } else { length } as u8;
             if length != 0 {
-                self.stored_field_values.insert((*field, doc_id, b"len".to_vec()), vec![length]);
+                self.stored_field_values.insert((*field_id, doc_id, b"len".to_vec()), vec![length]);
             }
 
             // Increment total field docs
             {
-                let stat_name = KeyBuilder::segment_stat_total_field_docs_stat_name(field.ord());
+                let stat_name = KeyBuilder::segment_stat_total_field_docs_stat_name(field_id.0);
                 let mut stat = self.statistics.entry(stat_name).or_insert(0);
                 *stat += 1;
             }
 
             // Increment total field tokens
             {
-                let stat_name = KeyBuilder::segment_stat_total_field_tokens_stat_name(field.ord());
+                let stat_name = KeyBuilder::segment_stat_total_field_tokens_stat_name(field_id.0);
                 let mut stat = self.statistics.entry(stat_name).or_insert(0);
                 *stat += field_token_count as i64;
             }

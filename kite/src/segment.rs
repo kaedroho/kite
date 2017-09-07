@@ -12,6 +12,6 @@ pub trait Segment {
     fn id(&self) -> u32;
 
     fn doc_id(&self, ord: u16) -> DocId {
-        DocId::from_segment_ord(self.id(), ord)
+        DocId(self.id(), ord)
     }
 }

@@ -6,23 +6,11 @@ use term_vector::TermVector;
 use schema::FieldId;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
-pub struct DocId(u32, u16);
+pub struct DocId(pub u32, pub u16);
 
 impl DocId {
-    pub fn segment(&self) -> u32 {
-        self.0
-    }
-
-    pub fn ord(&self) -> u16 {
-        self.1
-    }
-
     pub fn as_u64(&self) -> u64 {
         (self.0 as u64) << 16 | (self.1 as u64)
-    }
-
-    pub fn from_segment_ord(segment: u32, ord: u16) -> DocId {
-        DocId(segment, ord)
     }
 
     pub fn from_u64(val: u64) -> DocId {
