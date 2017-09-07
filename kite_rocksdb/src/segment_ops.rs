@@ -116,10 +116,10 @@ impl RocksDBStore {
             let mut parts_iter = key[1..].split(|b| *b == b'/');
             let segment = str::from_utf8(parts_iter.next().unwrap()).unwrap().parse::<u32>().unwrap();
             let doc_id = str::from_utf8(parts_iter.next().unwrap()).unwrap().parse::<u32>().unwrap();
-            let field_ord = str::from_utf8(parts_iter.next().unwrap()).unwrap().parse::<u32>().unwrap();
+            let field_id = str::from_utf8(parts_iter.next().unwrap()).unwrap().parse::<u32>().unwrap();
             let value_type = parts_iter.next().unwrap().to_vec();
 
-            (segment, doc_id, field_ord, value_type)
+            (segment, doc_id, field_id, value_type)
         }
 
         for source_segment in source_segments.iter() {
@@ -244,7 +244,7 @@ impl RocksDBStore {
         //  - The third segment's ids will be remapped to 200 - 299
 
         let mut doc_id_mapping: FnvHashMap<DocId, u16> = FnvHashMap::default();
-        let mut current_ord: u32 = 0;
+        let mut current_doc_id: u32 = 0;
 
         for source_segment in source_segments.iter() {
             let kb = KeyBuilder::segment_stat(*source_segment, b"total_docs");
@@ -255,14 +255,14 @@ impl RocksDBStore {
                 None => continue,
             };
 
-            for source_ord in 0..total_docs {
-                if current_ord >= 65536 {
+            for source_doc_id in 0..total_docs {
+                if current_doc_id >= 65536 {
                     return Err(SegmentMergeError::TooManyDocs);
                 }
 
-                let from = DocId(*source_segment, source_ord as u16);
-                doc_id_mapping.insert(from, current_ord as u16);
-                current_ord += 1;
+                let from = DocId(*source_segment, source_doc_id as u16);
+                doc_id_mapping.insert(from, current_doc_id as u16);
+                current_doc_id += 1;
             }
         }
 
@@ -329,10 +329,10 @@ impl RocksDBStore {
             let mut parts_iter = key[1..].split(|b| *b == b'/');
             let segment = str::from_utf8(parts_iter.next().unwrap()).unwrap().parse::<u32>().unwrap();
             let doc_id = str::from_utf8(parts_iter.next().unwrap()).unwrap().parse::<u32>().unwrap();
-            let field_ord = str::from_utf8(parts_iter.next().unwrap()).unwrap().parse::<u32>().unwrap();
+            let field_id = str::from_utf8(parts_iter.next().unwrap()).unwrap().parse::<u32>().unwrap();
             let value_type = parts_iter.next().unwrap().to_vec();
 
-            (segment, doc_id, field_ord, value_type)
+            (segment, doc_id, field_id, value_type)
         }
 
         for source_segment in segments.iter() {

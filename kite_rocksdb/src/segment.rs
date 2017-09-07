@@ -34,8 +34,8 @@ impl<'a> Segment for RocksDBSegment<'a> {
         Ok(val)
     }
 
-    fn load_stored_field_value_raw(&self, doc_ord: u16, field_id: FieldId, value_type: &[u8]) -> Result<Option<Vec<u8>>, String> {
-        let kb = KeyBuilder::stored_field_value(self.id, doc_ord, field_id.0, value_type);
+    fn load_stored_field_value_raw(&self, doc_local_id: u16, field_id: FieldId, value_type: &[u8]) -> Result<Option<Vec<u8>>, String> {
+        let kb = KeyBuilder::stored_field_value(self.id, doc_local_id, field_id.0, value_type);
         let val = try!(self.reader.snapshot.get(&kb.key()));
         Ok(val.map(|v| v.to_vec()))
     }

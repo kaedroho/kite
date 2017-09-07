@@ -121,8 +121,8 @@ impl DocumentIndexManager {
         }
 
         for (key, doc_id) in keys_to_update {
-            let new_doc_ord = doc_id_mapping.get(&doc_id).unwrap();
-            let new_doc_id = DocId(dest_segment, *new_doc_ord);
+            let new_doc_local_id = doc_id_mapping.get(&doc_id).unwrap();
+            let new_doc_id = DocId(dest_segment, *new_doc_local_id);
 
             let kb = KeyBuilder::primary_key_index(&key);
             let mut doc_id_bytes = [0; 6];

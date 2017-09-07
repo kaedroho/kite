@@ -141,8 +141,8 @@ impl Segment for SegmentBuilder {
         Ok(self.statistics.get(stat_name).cloned())
     }
 
-    fn load_stored_field_value_raw(&self, doc_ord: u16, field_id: FieldId, value_type: &[u8]) -> Result<Option<Vec<u8>>, String> {
-        Ok(self.stored_field_values.get(&(field_id, doc_ord, value_type.to_vec())).cloned())
+    fn load_stored_field_value_raw(&self, doc_local_id: u16, field_id: FieldId, value_type: &[u8]) -> Result<Option<Vec<u8>>, String> {
+        Ok(self.stored_field_values.get(&(field_id, doc_local_id, value_type.to_vec())).cloned())
     }
 
     fn load_term_directory(&self, field_id: FieldId, term_id: TermId) -> Result<Option<RoaringBitmap>, String> {

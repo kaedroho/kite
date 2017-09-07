@@ -15,14 +15,14 @@ impl KeyBuilder {
         }
     }
 
-    pub fn stored_field_value(segment: u32, doc_ord: u16, field_ord: u32, value_type: &[u8]) -> KeyBuilder {
+    pub fn stored_field_value(segment: u32, doc_local_id: u16, field_id: u32, value_type: &[u8]) -> KeyBuilder {
         let mut kb = KeyBuilder::new();
         kb.push_char(b'v');
         kb.push_string(segment.to_string().as_bytes());
         kb.separator();
-        kb.push_string(doc_ord.to_string().as_bytes());
+        kb.push_string(doc_local_id.to_string().as_bytes());
         kb.separator();
-        kb.push_string(field_ord.to_string().as_bytes());
+        kb.push_string(field_id.to_string().as_bytes());
         kb.separator();
         kb.push_string(value_type);
         kb
@@ -57,12 +57,12 @@ impl KeyBuilder {
         kb
     }
 
-    pub fn segment_dir_list(segment: u32, field_ord: u32, term_ord: u32) -> KeyBuilder {
+    pub fn segment_dir_list(segment: u32, field_id: u32, term_id: u32) -> KeyBuilder {
         let mut kb = KeyBuilder::new();
         kb.push_char(b'd');
-        kb.push_string(field_ord.to_string().as_bytes());
+        kb.push_string(field_id.to_string().as_bytes());
         kb.separator();
-        kb.push_string(term_ord.to_string().as_bytes());
+        kb.push_string(term_id.to_string().as_bytes());
         kb.separator();
         kb.push_string(segment.to_string().as_bytes());
         kb
@@ -82,7 +82,7 @@ impl KeyBuilder {
         kb
     }
 
-    pub fn segment_stat_term_doc_frequency_stat_name(field_ord: u32, term_ord: u32) -> Vec<u8> {
+    pub fn segment_stat_term_doc_frequency_stat_name(field_id: u32, term_id: u32) -> Vec<u8> {
         let mut stat_name = Vec::new();
         for c in b"tdf" {
             stat_name.push(*c);
@@ -90,20 +90,20 @@ impl KeyBuilder {
 
         stat_name.push(b'-');
 
-        for c in field_ord.to_string().as_bytes() {
+        for c in field_id.to_string().as_bytes() {
             stat_name.push(*c);
         }
 
         stat_name.push(b'-');
 
-        for c in term_ord.to_string().as_bytes() {
+        for c in term_id.to_string().as_bytes() {
             stat_name.push(*c);
         }
 
         stat_name
     }
 
-    pub fn segment_stat_total_field_tokens_stat_name(field_ord: u32) -> Vec<u8> {
+    pub fn segment_stat_total_field_tokens_stat_name(field_id: u32) -> Vec<u8> {
         let mut stat_name = Vec::new();
         for c in b"fttok" {
             stat_name.push(*c);
@@ -111,14 +111,14 @@ impl KeyBuilder {
 
         stat_name.push(b'-');
 
-        for c in field_ord.to_string().as_bytes() {
+        for c in field_id.to_string().as_bytes() {
             stat_name.push(*c);
         }
 
         stat_name
     }
 
-    pub fn segment_stat_total_field_docs_stat_name(field_ord: u32) -> Vec<u8> {
+    pub fn segment_stat_total_field_docs_stat_name(field_id: u32) -> Vec<u8> {
         let mut stat_name = Vec::new();
         for c in b"ftdoc" {
             stat_name.push(*c);
@@ -126,7 +126,7 @@ impl KeyBuilder {
 
         stat_name.push(b'-');
 
-        for c in field_ord.to_string().as_bytes() {
+        for c in field_id.to_string().as_bytes() {
             stat_name.push(*c);
         }
 

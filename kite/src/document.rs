@@ -15,8 +15,8 @@ impl DocId {
 
     pub fn from_u64(val: u64) -> DocId {
         let segment = (val >> 16) & 0xFFFFFFFF;
-        let ord = val & 0xFFFF;
-        DocId(segment as u32, ord as u16)
+        let local_id = val & 0xFFFF;
+        DocId(segment as u32, local_id as u16)
     }
 }
 
