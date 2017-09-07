@@ -1,5 +1,5 @@
-use kite::schema::FieldRef;
-use kite::term::TermRef;
+use kite::schema::FieldId;
+use kite::term::TermId;
 use kite::Query;
 use kite::query::term_scorer::TermScorer;
 
@@ -14,7 +14,7 @@ pub enum CombinatorScorer {
 #[derive(Debug, Clone)]
 pub enum ScoreFunctionOp {
     Literal(f32),
-    TermScorer(FieldRef, TermRef, TermScorer),
+    TermScorer(FieldId, TermId, TermScorer),
     CombinatorScorer(u32, CombinatorScorer),
 }
 
@@ -47,8 +47,8 @@ pub fn plan_score_function(index_reader: &RocksDBReader, mut score_function: &mu
         }
         Query::Term{field, ref term, ref scorer} => {
             // Get term
-            let term_ref = match index_reader.store.term_dictionary.get(term) {
-                Some(term_ref) => term_ref,
+            let term_id = match index_reader.store.term_dictionary.get(term) {
+                Some(term_id) => term_id,
                 None => {
                     // Term doesn't exist, so will never match
                     score_function.push(ScoreFunctionOp::Literal(0.0f32));
@@ -56,13 +56,13 @@ pub fn plan_score_function(index_reader: &RocksDBReader, mut score_function: &mu
                 }
             };
 
-            score_function.push(ScoreFunctionOp::TermScorer(field, term_ref, scorer.clone()));
+            score_function.push(ScoreFunctionOp::TermScorer(field, term_id, scorer.clone()));
         }
         Query::MultiTerm{field, ref term_selector, ref scorer} => {
             // Get terms
             let mut total_terms = 0;
-            for term_ref in index_reader.store.term_dictionary.select(term_selector) {
-                score_function.push(ScoreFunctionOp::TermScorer(field, term_ref, scorer.clone()));
+            for term_id in index_reader.store.term_dictionary.select(term_selector) {
+                score_function.push(ScoreFunctionOp::TermScorer(field, term_id, scorer.clone()));
                 total_terms += 1;
             }
 

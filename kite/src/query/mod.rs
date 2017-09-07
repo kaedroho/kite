@@ -2,7 +2,7 @@ pub mod multi_term_selector;
 pub mod term_scorer;
 
 use term::Term;
-use schema::FieldRef;
+use schema::FieldId;
 use query::multi_term_selector::MultiTermSelector;
 use query::term_scorer::TermScorer;
 
@@ -20,7 +20,7 @@ pub enum Query {
     /// Matches documents that contain the specified term in the specified field
     Term {
         /// The field being searched
-        field: FieldRef,
+        field: FieldId,
 
         /// The term to search for
         term: Term,
@@ -33,7 +33,7 @@ pub enum Query {
     /// Used for prefix, fuzzy and regex queries
     MultiTerm {
         /// The field being searched
-        field: FieldRef,
+        field: FieldId,
 
         /// The term selector to use. All terms that match this selector will be searched
         term_selector: MultiTermSelector,
@@ -84,7 +84,7 @@ impl Query {
     }
 
     /// Creates a new Term query
-    pub fn term(field: FieldRef, term: Term) -> Query {
+    pub fn term(field: FieldId, term: Term) -> Query {
         Query::Term {
             field: field,
             term: term,

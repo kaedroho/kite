@@ -19,9 +19,9 @@ pub mod similarity;
 pub mod query;
 pub mod collectors;
 
-pub use term::{Term, TermRef};
+pub use term::{Term, TermId};
 pub use token::Token;
-pub use document::{Document, DocRef};
+pub use document::{Document, DocId};
 pub use query::multi_term_selector::MultiTermSelector;
 pub use query::term_scorer::TermScorer;
 pub use query::Query;

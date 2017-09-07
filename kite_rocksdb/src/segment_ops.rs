@@ -3,7 +3,7 @@ use std::io::Cursor;
 
 use rocksdb::{self, WriteBatch, WriteOptions};
 use roaring::RoaringBitmap;
-use kite::document::DocRef;
+use kite::document::DocId;
 use byteorder::{ByteOrder, LittleEndian};
 use fnv::{FnvHashMap, FnvHashSet};
 
@@ -32,7 +32,7 @@ impl From<SegmentMergeError> for String {
 }
 
 impl RocksDBStore {
-    fn merge_segment_data(&self, source_segments: &Vec<u32>, dest_segment: u32, doc_ref_mapping: &FnvHashMap<DocRef, u16>) -> Result<(), SegmentMergeError> {
+    fn merge_segment_data(&self, source_segments: &Vec<u32>, dest_segment: u32, doc_id_mapping: &FnvHashMap<DocId, u16>) -> Result<(), SegmentMergeError> {
         // Put source_segments in a FnvHashSet as this is much faster for performing contains queries against
         let source_segments_btree = source_segments.iter().collect::<FnvHashSet<_>>();
 
@@ -86,8 +86,8 @@ impl RocksDBStore {
                 // Merge term directory into the new one (and remap the doc ids)
                 let bitmap = RoaringBitmap::deserialize_from(Cursor::new(iter.value().unwrap())).unwrap();
                 for doc_id in bitmap.iter() {
-                    let doc_ref = DocRef::from_segment_ord(segment, doc_id as u16);
-                    let new_doc_id = doc_ref_mapping.get(&doc_ref).unwrap();
+                    let doc_id = DocId::from_segment_ord(segment, doc_id as u16);
+                    let new_doc_id = doc_id_mapping.get(&doc_id).unwrap();
                     current_td.insert(*new_doc_id as u32);
                 }
             }
@@ -142,8 +142,8 @@ impl RocksDBStore {
                 }
 
                 // Remap doc id
-                let doc_ref = DocRef::from_segment_ord(segment, doc_id as u16);
-                let new_doc_id = doc_ref_mapping.get(&doc_ref).unwrap();
+                let doc_id = DocId::from_segment_ord(segment, doc_id as u16);
+                let new_doc_id = doc_id_mapping.get(&doc_id).unwrap();
 
                 // Write value into new segment
                 let kb = KeyBuilder::stored_field_value(dest_segment, *new_doc_id, field, &value_type);
@@ -212,7 +212,7 @@ impl RocksDBStore {
         Ok(())
     }
 
-    fn commit_segment_merge(&self, source_segments: &Vec<u32>, dest_segment: u32, doc_ref_mapping: &FnvHashMap<DocRef, u16>) -> Result<(), SegmentMergeError> {
+    fn commit_segment_merge(&self, source_segments: &Vec<u32>, dest_segment: u32, doc_id_mapping: &FnvHashMap<DocId, u16>) -> Result<(), SegmentMergeError> {
         let mut write_batch = WriteBatch::default();
 
         // Activate new segment
@@ -228,7 +228,7 @@ impl RocksDBStore {
 
         // Update document index and commit
         // This will write the write batch
-        try!(self.document_index.commit_segment_merge(&self.db, write_batch, source_segments, dest_segment, doc_ref_mapping));
+        try!(self.document_index.commit_segment_merge(&self.db, write_batch, source_segments, dest_segment, doc_id_mapping));
 
         Ok(())
     }
@@ -243,7 +243,7 @@ impl RocksDBStore {
         //  - The second segment's ids will be remapped to 100 - 199
         //  - The third segment's ids will be remapped to 200 - 299
 
-        let mut doc_ref_mapping: FnvHashMap<DocRef, u16> = FnvHashMap::default();
+        let mut doc_id_mapping: FnvHashMap<DocId, u16> = FnvHashMap::default();
         let mut current_ord: u32 = 0;
 
         for source_segment in source_segments.iter() {
@@ -260,8 +260,8 @@ impl RocksDBStore {
                     return Err(SegmentMergeError::TooManyDocs);
                 }
 
-                let from = DocRef::from_segment_ord(*source_segment, source_ord as u16);
-                doc_ref_mapping.insert(from, current_ord as u16);
+                let from = DocId::from_segment_ord(*source_segment, source_ord as u16);
+                doc_id_mapping.insert(from, current_ord as u16);
                 current_ord += 1;
             }
         }
@@ -273,7 +273,7 @@ impl RocksDBStore {
         // This means that nothing bad will happen if it crashes half way through -- the
         // worst that could happen is we're left with a partially-written segment that we
         // have to clean up.
-        try!(self.merge_segment_data(&source_segments, dest_segment, &doc_ref_mapping));
+        try!(self.merge_segment_data(&source_segments, dest_segment, &doc_id_mapping));
 
         // Commit the merge
         // This activates the new segment and updates the document index. Effectively committing
@@ -282,7 +282,7 @@ impl RocksDBStore {
         // prevent documents in the source segments being deleted/updated so we don't accidentally
         // undelete them (this will block until the merge is complete so they delete/update from
         // the new segment).
-        try!(self.commit_segment_merge(&source_segments, dest_segment, &doc_ref_mapping));
+        try!(self.commit_segment_merge(&source_segments, dest_segment, &doc_id_mapping));
 
         Ok(dest_segment)
     }

@@ -1,23 +1,23 @@
 use fnv::FnvHashMap;
 
-use kite::schema::FieldRef;
-use kite::term::TermRef;
+use kite::schema::FieldId;
+use kite::term::TermId;
 use kite::segment::Segment;
 
 use RocksDBReader;
 use key_builder::KeyBuilder;
 
 pub trait StatisticsReader {
-    fn total_docs(&mut self, field_ref: FieldRef) -> Result<i64, String>;
-    fn total_tokens(&mut self, field_ref: FieldRef) -> Result<i64, String>;
-    fn term_document_frequency(&mut self, field_ref: FieldRef, term_ref: TermRef) -> Result<i64, String>;
+    fn total_docs(&mut self, field_id: FieldId) -> Result<i64, String>;
+    fn total_tokens(&mut self, field_id: FieldId) -> Result<i64, String>;
+    fn term_document_frequency(&mut self, field_id: FieldId, term_id: TermId) -> Result<i64, String>;
 }
 
 pub struct RocksDBStatisticsReader<'a> {
     index_reader: &'a RocksDBReader<'a>,
-    total_docs: FnvHashMap<FieldRef, i64>,
-    total_tokens: FnvHashMap<FieldRef, i64>,
-    term_document_frequencies: FnvHashMap<(FieldRef, TermRef), i64>,
+    total_docs: FnvHashMap<FieldId, i64>,
+    total_tokens: FnvHashMap<FieldId, i64>,
+    term_document_frequencies: FnvHashMap<(FieldId, TermId), i64>,
 }
 
 impl<'a> RocksDBStatisticsReader<'a> {
@@ -44,36 +44,36 @@ impl<'a> RocksDBStatisticsReader<'a> {
 }
 
 impl<'a> StatisticsReader for RocksDBStatisticsReader<'a> {
-    fn total_docs(&mut self, field_ref: FieldRef) -> Result<i64, String> {
-        if let Some(val) = self.total_docs.get(&field_ref) {
+    fn total_docs(&mut self, field_id: FieldId) -> Result<i64, String> {
+        if let Some(val) = self.total_docs.get(&field_id) {
             return Ok(*val);
         }
 
-        let stat_name = KeyBuilder::segment_stat_total_field_docs_stat_name(field_ref.ord());
+        let stat_name = KeyBuilder::segment_stat_total_field_docs_stat_name(field_id.ord());
         let val = try!(self.get_statistic(&stat_name));
-        self.total_docs.insert(field_ref, val);
+        self.total_docs.insert(field_id, val);
         Ok(val)
     }
 
-    fn total_tokens(&mut self, field_ref: FieldRef) -> Result<i64, String> {
-        if let Some(val) = self.total_tokens.get(&field_ref) {
+    fn total_tokens(&mut self, field_id: FieldId) -> Result<i64, String> {
+        if let Some(val) = self.total_tokens.get(&field_id) {
             return Ok(*val);
         }
 
-        let stat_name = KeyBuilder::segment_stat_total_field_tokens_stat_name(field_ref.ord());
+        let stat_name = KeyBuilder::segment_stat_total_field_tokens_stat_name(field_id.ord());
         let val = try!(self.get_statistic(&stat_name));
-        self.total_tokens.insert(field_ref, val);
+        self.total_tokens.insert(field_id, val);
         Ok(val)
     }
 
-    fn term_document_frequency(&mut self, field_ref: FieldRef, term_ref: TermRef) -> Result<i64, String> {
-        if let Some(val) = self.term_document_frequencies.get(&(field_ref, term_ref)) {
+    fn term_document_frequency(&mut self, field_id: FieldId, term_id: TermId) -> Result<i64, String> {
+        if let Some(val) = self.term_document_frequencies.get(&(field_id, term_id)) {
             return Ok(*val);
         }
 
-        let stat_name = KeyBuilder::segment_stat_term_doc_frequency_stat_name(field_ref.ord(), term_ref.ord());
+        let stat_name = KeyBuilder::segment_stat_term_doc_frequency_stat_name(field_id.ord(), term_id.ord());
         let val = try!(self.get_statistic(&stat_name));
-        self.term_document_frequencies.insert((field_ref, term_ref), val);
+        self.term_document_frequencies.insert((field_id, term_id), val);
         Ok(val)
     }
 }

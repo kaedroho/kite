@@ -3,12 +3,12 @@ use byteorder::{WriteBytesExt, LittleEndian};
 use fnv::FnvHashMap;
 
 use term_vector::TermVector;
-use schema::FieldRef;
+use schema::FieldId;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
-pub struct DocRef(u32, u16);
+pub struct DocId(u32, u16);
 
-impl DocRef {
+impl DocId {
     pub fn segment(&self) -> u32 {
         self.0
     }
@@ -21,14 +21,14 @@ impl DocRef {
         (self.0 as u64) << 16 | (self.1 as u64)
     }
 
-    pub fn from_segment_ord(segment: u32, ord: u16) -> DocRef {
-        DocRef(segment, ord)
+    pub fn from_segment_ord(segment: u32, ord: u16) -> DocId {
+        DocId(segment, ord)
     }
 
-    pub fn from_u64(val: u64) -> DocRef {
+    pub fn from_u64(val: u64) -> DocId {
         let segment = (val >> 16) & 0xFFFFFFFF;
         let ord = val & 0xFFFF;
-        DocRef(segment as u32, ord as u16)
+        DocId(segment as u32, ord as u16)
     }
 }
 
@@ -79,6 +79,6 @@ impl FieldValue {
 #[derive(Debug, Clone)]
 pub struct Document {
     pub key: String,
-    pub indexed_fields: FnvHashMap<FieldRef, TermVector>,
-    pub stored_fields: FnvHashMap<FieldRef, FieldValue>,
+    pub indexed_fields: FnvHashMap<FieldId, TermVector>,
+    pub stored_fields: FnvHashMap<FieldId, FieldValue>,
 }

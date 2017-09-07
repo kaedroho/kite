@@ -3,12 +3,12 @@ use byteorder::{WriteBytesExt, LittleEndian};
 
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
-pub struct TermRef(u32);
+pub struct TermId(u32);
 
 
-impl TermRef {
-    pub fn new(ord: u32) -> TermRef {
-        TermRef(ord)
+impl TermId {
+    pub fn new(ord: u32) -> TermId {
+        TermId(ord)
     }
 
     pub fn ord(&self) -> u32 {

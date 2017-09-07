@@ -22,9 +22,9 @@ use std::path::Path;
 use std::sync::Arc;
 
 use rocksdb::{DB, WriteBatch, Options, MergeOperands, Snapshot};
-use kite::{Document, DocRef, TermRef};
+use kite::{Document, DocId, TermId};
 use kite::document::FieldValue;
-use kite::schema::{Schema, FieldType, FieldFlags, FieldRef, AddFieldError};
+use kite::schema::{Schema, FieldType, FieldFlags, FieldId, AddFieldError};
 use byteorder::{ByteOrder, LittleEndian};
 use chrono::{NaiveDateTime, DateTime, Utc};
 use fnv::FnvHashMap;
@@ -190,20 +190,20 @@ impl RocksDBStore {
         self.db.path()
     }
 
-    pub fn add_field(&mut self, name: String, field_type: FieldType, field_flags: FieldFlags) -> Result<FieldRef, AddFieldError> {
+    pub fn add_field(&mut self, name: String, field_type: FieldType, field_flags: FieldFlags) -> Result<FieldId, AddFieldError> {
         let mut schema_copy = (*self.schema).clone();
-        let field_ref = try!(schema_copy.add_field(name, field_type, field_flags));
+        let field_id = try!(schema_copy.add_field(name, field_type, field_flags));
         self.schema = Arc::new(schema_copy);
 
         // FIXME: How do we throw this error?
         self.db.put(b".schema", serde_json::to_string(&*self.schema).unwrap().as_bytes()).unwrap();
 
-        Ok(field_ref)
+        Ok(field_id)
     }
 
-    pub fn remove_field(&mut self, field_ref: &FieldRef) -> bool {
+    pub fn remove_field(&mut self, field_id: &FieldId) -> bool {
         let mut schema_copy = (*self.schema).clone();
-        let field_removed = schema_copy.remove_field(field_ref);
+        let field_removed = schema_copy.remove_field(field_id);
 
         if field_removed {
             self.schema = Arc::new(schema_copy);
@@ -225,8 +225,8 @@ impl RocksDBStore {
         let segment = try!(self.write_segment(&builder));
 
         // Update document index
-        let doc_ref = DocRef::from_segment_ord(segment, 0);
-        try!(self.document_index.insert_or_replace_key(&self.db, &doc_key.as_bytes().iter().cloned().collect(), doc_ref));
+        let doc_id = DocId::from_segment_ord(segment, 0);
+        try!(self.document_index.insert_or_replace_key(&self.db, &doc_key.as_bytes().iter().cloned().collect(), doc_id));
 
         Ok(())
     }
@@ -245,28 +245,28 @@ impl RocksDBStore {
 
         // Merge the term dictionary
         // Writes new terms to disk and generates mapping between the builder's term dictionary and the real one
-        let mut term_dictionary_map: FnvHashMap<TermRef, TermRef> = FnvHashMap::default();
-        for (term, current_term_ref) in builder.term_dictionary.iter() {
-            let new_term_ref = try!(self.term_dictionary.get_or_create(&self.db, term));
-            term_dictionary_map.insert(*current_term_ref, new_term_ref);
+        let mut term_dictionary_map: FnvHashMap<TermId, TermId> = FnvHashMap::default();
+        for (term, current_term_id) in builder.term_dictionary.iter() {
+            let new_term_id = try!(self.term_dictionary.get_or_create(&self.db, term));
+            term_dictionary_map.insert(*current_term_id, new_term_id);
         }
 
         // Write term directories
-        for (&(field_ref, term_ref), term_directory) in builder.term_directories.iter() {
-            let new_term_ref = term_dictionary_map.get(&term_ref).expect("TermRef not in term_dictionary_map");
+        for (&(field_id, term_id), term_directory) in builder.term_directories.iter() {
+            let new_term_id = term_dictionary_map.get(&term_id).expect("TermId not in term_dictionary_map");
 
             // Serialise
             let mut term_directory_bytes = Vec::new();
             term_directory.serialize_into(&mut term_directory_bytes).unwrap();
 
             // Write
-            let kb = KeyBuilder::segment_dir_list(segment, field_ref.ord(), new_term_ref.ord());
+            let kb = KeyBuilder::segment_dir_list(segment, field_id.ord(), new_term_id.ord());
             try!(write_batch.put(&kb.key(), &term_directory_bytes));
         }
 
         // Write stored fields
-        for (&(field_ref, doc_id, ref value_type), value) in builder.stored_field_values.iter() {
-            let kb = KeyBuilder::stored_field_value(segment, doc_id, field_ref.ord(), value_type);
+        for (&(field_id, doc_id, ref value_type), value) in builder.stored_field_values.iter() {
+            let kb = KeyBuilder::stored_field_value(segment, doc_id, field_id.ord(), value_type);
             try!(write_batch.put(&kb.key(), value));
         }
 
@@ -287,7 +287,7 @@ impl RocksDBStore {
 
     pub fn remove_document_by_key(&self, doc_key: &str) -> Result<bool, rocksdb::Error> {
         match try!(self.document_index.delete_document_by_key(&self.db, &doc_key.as_bytes().iter().cloned().collect())) {
-            Some(_doc_ref) => Ok(true),
+            Some(_doc_id) => Ok(true),
             None => Ok(false),
         }
     }
@@ -307,8 +307,8 @@ impl fmt::Debug for RocksDBStore {
 }
 
 pub enum StoredFieldReadError {
-    /// The provided FieldRef wasn't valid for this index
-    InvalidFieldRef(FieldRef),
+    /// The provided FieldId wasn't valid for this index
+    InvalidFieldId(FieldId),
 
     /// A RocksDB error occurred while reading from the disk
     RocksDBError(rocksdb::Error),
@@ -344,13 +344,13 @@ impl<'a> RocksDBReader<'a> {
         self.store.document_index.contains_document_key(&doc_key.as_bytes().iter().cloned().collect())
     }
 
-    pub fn read_stored_field(&self, field_ref: FieldRef, doc_ref: DocRef) -> Result<Option<FieldValue>, StoredFieldReadError> {
-        let field_info = match self.schema().get(&field_ref) {
+    pub fn read_stored_field(&self, field_id: FieldId, doc_id: DocId) -> Result<Option<FieldValue>, StoredFieldReadError> {
+        let field_info = match self.schema().get(&field_id) {
             Some(field_info) => field_info,
-            None => return Err(StoredFieldReadError::InvalidFieldRef(field_ref)),
+            None => return Err(StoredFieldReadError::InvalidFieldId(field_id)),
         };
 
-        let kb = KeyBuilder::stored_field_value(doc_ref.segment(), doc_ref.ord(), field_ref.ord(), b"val");
+        let kb = KeyBuilder::stored_field_value(doc_id.segment(), doc_id.ord(), field_id.ord(), b"val");
 
         match try!(self.snapshot.get(&kb.key())) {
             Some(value) => {

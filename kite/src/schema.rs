@@ -95,10 +95,10 @@ impl FieldInfo {
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
-pub struct FieldRef(u32);
+pub struct FieldId(u32);
 
-// FieldRef needs to be serialised as a string as it's used as a mapping key
-impl Serialize for FieldRef {
+// FieldId needs to be serialised as a string as it's used as a mapping key
+impl Serialize for FieldId {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer
     {
@@ -106,24 +106,24 @@ impl Serialize for FieldRef {
     }
 }
 
-impl<'a> Deserialize<'a> for FieldRef {
-    fn deserialize<D>(deserializer: D) -> Result<FieldRef, D::Error>
+impl<'a> Deserialize<'a> for FieldId {
+    fn deserialize<D>(deserializer: D) -> Result<FieldId, D::Error>
         where D: Deserializer<'a>
     {
         struct Visitor;
 
         impl<'a> ::serde::de::Visitor<'a> for Visitor {
-            type Value = FieldRef;
+            type Value = FieldId;
 
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
                 formatter.write_str("a string containing an integer")
             }
 
-            fn visit_str<E>(self, value: &str) -> Result<FieldRef, E>
+            fn visit_str<E>(self, value: &str) -> Result<FieldId, E>
                 where E: ::serde::de::Error
             {
                 match value.parse() {
-                    Ok(value) => Ok(FieldRef::new(value)),
+                    Ok(value) => Ok(FieldId::new(value)),
                     Err(_) => Err(E::invalid_value(::serde::de::Unexpected::Str(value), &"a string containing an integer")),
                 }
             }
@@ -133,9 +133,9 @@ impl<'a> Deserialize<'a> for FieldRef {
     }
 }
 
-impl FieldRef {
-    pub fn new(ord: u32) -> FieldRef {
-        FieldRef(ord)
+impl FieldId {
+    pub fn new(ord: u32) -> FieldId {
+        FieldId(ord)
     }
 
     pub fn ord(&self) -> u32 {
@@ -151,8 +151,8 @@ pub enum AddFieldError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Schema {
     next_field_id: u32,
-    fields: FnvHashMap<FieldRef, FieldInfo>,
-    field_names: HashMap<String, FieldRef>,
+    fields: FnvHashMap<FieldId, FieldInfo>,
+    field_names: HashMap<String, FieldId>,
 }
 
 impl Schema {
@@ -164,33 +164,33 @@ impl Schema {
         }
     }
 
-    fn new_field_ref(&mut self) -> FieldRef {
-        let field_ref = FieldRef(self.next_field_id);
+    fn new_field_id(&mut self) -> FieldId {
+        let field_id = FieldId(self.next_field_id);
         self.next_field_id += 1;
 
-        field_ref
+        field_id
     }
 
-    pub fn get_field_by_name(&self, name: &str) -> Option<FieldRef> {
+    pub fn get_field_by_name(&self, name: &str) -> Option<FieldId> {
         self.field_names.get(name).cloned()
     }
 
-    pub fn add_field(&mut self, name: String, field_type: FieldType, field_flags: FieldFlags) -> Result<FieldRef, AddFieldError> {
+    pub fn add_field(&mut self, name: String, field_type: FieldType, field_flags: FieldFlags) -> Result<FieldId, AddFieldError> {
         if self.field_names.contains_key(&name) {
             return Err(AddFieldError::FieldAlreadyExists(name));
         }
 
-        let field_ref = self.new_field_ref();
+        let field_id = self.new_field_id();
         let field_info = FieldInfo::new(name.clone(), field_type, field_flags);
 
-        self.fields.insert(field_ref, field_info);
-        self.field_names.insert(name, field_ref);
+        self.fields.insert(field_id, field_info);
+        self.field_names.insert(name, field_id);
 
-        Ok(field_ref)
+        Ok(field_id)
     }
 
-    pub fn remove_field(&mut self, field_ref: &FieldRef) -> bool {
-        match self.fields.remove(field_ref) {
+    pub fn remove_field(&mut self, field_id: &FieldId) -> bool {
+        match self.fields.remove(field_id) {
             Some(removed_field) => {
                 self.field_names.remove(&removed_field.name);
                 true
@@ -201,9 +201,9 @@ impl Schema {
 }
 
 impl Deref for Schema {
-    type Target = FnvHashMap<FieldRef, FieldInfo>;
+    type Target = FnvHashMap<FieldId, FieldInfo>;
 
-    fn deref(&self) -> &FnvHashMap<FieldRef, FieldInfo> {
+    fn deref(&self) -> &FnvHashMap<FieldId, FieldInfo> {
         &self.fields
     }
 }

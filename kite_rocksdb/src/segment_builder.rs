@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
-use kite::{Document, Term, TermRef};
-use kite::schema::FieldRef;
+use kite::{Document, Term, TermId};
+use kite::schema::FieldId;
 use kite::segment::Segment;
 use byteorder::{LittleEndian, WriteBytesExt};
 use roaring::RoaringBitmap;
@@ -12,11 +12,11 @@ use key_builder::KeyBuilder;
 #[derive(Debug)]
 pub struct SegmentBuilder {
     current_doc: u16,
-    pub term_dictionary: HashMap<Term, TermRef>,
-    current_term_ref: u32,
-    pub term_directories: FnvHashMap<(FieldRef, TermRef), RoaringBitmap>,
+    pub term_dictionary: HashMap<Term, TermId>,
+    current_term_id: u32,
+    pub term_directories: FnvHashMap<(FieldId, TermId), RoaringBitmap>,
     pub statistics: FnvHashMap<Vec<u8>, i64>,
-    pub stored_field_values: FnvHashMap<(FieldRef, u16, Vec<u8>), Vec<u8>>,
+    pub stored_field_values: FnvHashMap<(FieldId, u16, Vec<u8>), Vec<u8>>,
 }
 
 #[derive(Debug)]
@@ -30,24 +30,24 @@ impl SegmentBuilder {
         SegmentBuilder {
             current_doc: 0,
             term_dictionary: HashMap::new(),
-            current_term_ref: 0,
+            current_term_id: 0,
             term_directories: FnvHashMap::default(),
             statistics: FnvHashMap::default(),
             stored_field_values: FnvHashMap::default(),
         }
     }
 
-    fn get_term_ref(&mut self, term: &Term) -> TermRef {
-        if let Some(term_ref) = self.term_dictionary.get(term) {
-            return *term_ref;
+    fn get_term_id(&mut self, term: &Term) -> TermId {
+        if let Some(term_id) = self.term_dictionary.get(term) {
+            return *term_id;
         }
 
         // Add the term to the dictionary
-        let term_ref = TermRef::new(self.current_term_ref);
-        self.current_term_ref += 1;
-        self.term_dictionary.insert(term.clone(), term_ref);
+        let term_id = TermId::new(self.current_term_id);
+        self.current_term_id += 1;
+        self.term_dictionary.insert(term.clone(), term_id);
 
-        term_ref
+        term_id
     }
 
     pub fn add_document(&mut self, doc: &Document) -> Result<u16, DocumentInsertError> {
@@ -66,21 +66,21 @@ impl SegmentBuilder {
                 field_token_count += frequency;
 
                 // Get term ref
-                let term_ref = self.get_term_ref(term);
+                let term_id = self.get_term_id(term);
 
                 // Term frequency
-                let mut term_frequency = term_frequencies.entry(term_ref).or_insert(0);
+                let mut term_frequency = term_frequencies.entry(term_id).or_insert(0);
                 *term_frequency += frequency;
 
                 // Write directory list
-                self.term_directories.entry((*field, term_ref)).or_insert_with(RoaringBitmap::new).insert(doc_id as u32);
+                self.term_directories.entry((*field, term_id)).or_insert_with(RoaringBitmap::new).insert(doc_id as u32);
 
                 // Write term frequency
                 // 1 is by far the most common frequency. At search time, we interpret a missing
                 // key as meaning there is a term frequency of 1
                 if frequency != 1 {
                     let mut value_type = vec![b't', b'f'];
-                    value_type.extend(term_ref.ord().to_string().as_bytes());
+                    value_type.extend(term_id.ord().to_string().as_bytes());
 
                     let mut frequency_bytes: Vec<u8> = Vec::new();
                     frequency_bytes.write_i64::<LittleEndian>(frequency as i64).unwrap();
@@ -89,7 +89,7 @@ impl SegmentBuilder {
                 }
 
                 // Increment term document frequency
-                let stat_name = KeyBuilder::segment_stat_term_doc_frequency_stat_name(field.ord(), term_ref.ord());
+                let stat_name = KeyBuilder::segment_stat_term_doc_frequency_stat_name(field.ord(), term_id.ord());
                 let mut stat = self.statistics.entry(stat_name).or_insert(0);
                 *stat += 1;
             }
@@ -141,12 +141,12 @@ impl Segment for SegmentBuilder {
         Ok(self.statistics.get(stat_name).cloned())
     }
 
-    fn load_stored_field_value_raw(&self, doc_ord: u16, field_ref: FieldRef, value_type: &[u8]) -> Result<Option<Vec<u8>>, String> {
-        Ok(self.stored_field_values.get(&(field_ref, doc_ord, value_type.to_vec())).cloned())
+    fn load_stored_field_value_raw(&self, doc_ord: u16, field_id: FieldId, value_type: &[u8]) -> Result<Option<Vec<u8>>, String> {
+        Ok(self.stored_field_values.get(&(field_id, doc_ord, value_type.to_vec())).cloned())
     }
 
-    fn load_term_directory(&self, field_ref: FieldRef, term_ref: TermRef) -> Result<Option<RoaringBitmap>, String> {
-        Ok(self.term_directories.get(&(field_ref, term_ref)).cloned())
+    fn load_term_directory(&self, field_id: FieldId, term_id: TermId) -> Result<Option<RoaringBitmap>, String> {
+        Ok(self.term_directories.get(&(field_id, term_id)).cloned())
     }
 
     fn load_deletion_list(&self) -> Result<Option<RoaringBitmap>, String> {

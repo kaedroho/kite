@@ -21,8 +21,8 @@ fn run_boolean_query<S: Segment>(boolean_query: &Vec<BooleanQueryOp>, is_negated
             BooleanQueryOp::PushEmpty => {
                 stack.push(RoaringBitmap::new());
             }
-            BooleanQueryOp::PushTermDirectory(field_ref, term_ref) => {
-                match try!(segment.load_term_directory(field_ref, term_ref)) {
+            BooleanQueryOp::PushTermDirectory(field_id, term_id) => {
+                match try!(segment.load_term_directory(field_id, term_id)) {
                     Some(doc_id_set) => stack.push(doc_id_set),
                     None => stack.push(RoaringBitmap::new()),
                 }
@@ -82,14 +82,14 @@ fn score_doc<S: Segment, R: StatisticsReader>(doc_id: u16, score_function: &Vec<
     for op in score_function.iter() {
         match *op {
             ScoreFunctionOp::Literal(val) => stack.push(val),
-            ScoreFunctionOp::TermScorer(field_ref, term_ref, ref scorer) => {
+            ScoreFunctionOp::TermScorer(field_id, term_id, ref scorer) => {
                 // TODO: Check this isn't really slow
-                match try!(segment.load_term_directory(field_ref, term_ref)) {
+                match try!(segment.load_term_directory(field_id, term_id)) {
                     Some(term_directory) => {
                         if term_directory.contains(doc_id as u32) {
                             // Read field length
                             // TODO: we only need this for BM25
-                            let field_length_raw = try!(segment.load_stored_field_value_raw(doc_id, field_ref, b"len"));
+                            let field_length_raw = try!(segment.load_stored_field_value_raw(doc_id, field_id, b"len"));
                             let field_length = match field_length_raw {
                                 Some(value) => {
                                     let length_sqrt = (value[0] as f32) / 3.0 + 1.0;
@@ -100,14 +100,14 @@ fn score_doc<S: Segment, R: StatisticsReader>(doc_id: u16, score_function: &Vec<
 
                             // Read term frequency
                             let mut value_type = vec![b't', b'f'];
-                            value_type.extend(term_ref.ord().to_string().as_bytes());
-                            let term_frequency_raw = try!(segment.load_stored_field_value_raw(doc_id, field_ref, &value_type));
+                            value_type.extend(term_id.ord().to_string().as_bytes());
+                            let term_frequency_raw = try!(segment.load_stored_field_value_raw(doc_id, field_id, &value_type));
                             let term_frequency = match term_frequency_raw {
                                 Some(value) => LittleEndian::read_i64(&value),
                                 None => 1,
                             };
 
-                            let score = scorer.similarity_model.score(term_frequency as u32, field_length, try!(stats.total_tokens(field_ref)) as u64, try!(stats.total_docs(field_ref)) as u64, try!(stats.term_document_frequency(field_ref, term_ref)) as u64);
+                            let score = scorer.similarity_model.score(term_frequency as u32, field_length, try!(stats.total_tokens(field_id)) as u64, try!(stats.total_docs(field_id)) as u64, try!(stats.term_document_frequency(field_id, term_id)) as u64);
                             stack.push(score * scorer.boost);
                         } else {
                             stack.push(0.0f32);
@@ -161,8 +161,8 @@ fn search_segment<C: Collector, S: Segment, R: StatisticsReader>(collector: &mut
     for doc in matches.iter() {
         let score = try!(score_doc(doc as u16, &plan.score_function, segment, stats));
 
-        let doc_ref = segment.doc_ref(doc as u16);
-        let doc_match = DocumentMatch::new_scored(doc_ref.as_u64(), score);
+        let doc_id = segment.doc_id(doc as u16);
+        let doc_match = DocumentMatch::new_scored(doc_id.as_u64(), score);
         collector.collect(doc_match);
     }
 

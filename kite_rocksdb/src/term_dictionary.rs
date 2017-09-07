@@ -4,7 +4,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::collections::HashMap;
 
 use rocksdb::{self, DB};
-use kite::{Term, TermRef};
+use kite::{Term, TermId};
 use kite::query::multi_term_selector::MultiTermSelector;
 
 use key_builder::KeyBuilder;
@@ -15,22 +15,22 @@ use key_builder::KeyBuilder;
 /// keys. We generate a unique number for each one to use instead.
 ///
 /// The term dictionary is a mapping between terms and their internal IDs
-/// (aka. TermRef). It is entirely held in memory and persisted to the disk.
+/// (aka. TermId). It is entirely held in memory and persisted to the disk.
 pub struct TermDictionaryManager {
-    next_term_ref: AtomicUsize,
-    terms: RwLock<HashMap<Term, TermRef>>,
+    next_term_id: AtomicUsize,
+    terms: RwLock<HashMap<Term, TermId>>,
     write_lock: Mutex<i32>,
 }
 
 impl TermDictionaryManager {
     /// Generates a new term dictionary
     pub fn new(db: &DB) -> Result<TermDictionaryManager, rocksdb::Error> {
-        // TODO: Raise error if .next_term_ref already exists
+        // TODO: Raise error if .next_term_id already exists
         // Next term ref
-        try!(db.put(b".next_term_ref", b"1"));
+        try!(db.put(b".next_term_id", b"1"));
 
         Ok(TermDictionaryManager {
-            next_term_ref: AtomicUsize::new(1),
+            next_term_id: AtomicUsize::new(1),
             terms: RwLock::new(HashMap::new()),
             write_lock: Mutex::new(0),
         })
@@ -38,9 +38,9 @@ impl TermDictionaryManager {
 
     /// Loads the term dictionary from an index
     pub fn open(db: &DB) -> Result<TermDictionaryManager, rocksdb::Error> {
-        let next_term_ref = match try!(db.get(b".next_term_ref")) {
-            Some(next_term_ref) => {
-                next_term_ref.to_utf8().unwrap().parse::<u32>().unwrap()
+        let next_term_id = match try!(db.get(b".next_term_id")) {
+            Some(next_term_id) => {
+                next_term_id.to_utf8().unwrap().parse::<u32>().unwrap()
             }
             None => 1,  // TODO: error
         };
@@ -56,49 +56,49 @@ impl TermDictionaryManager {
                 break;
             }
 
-            let term_ref = TermRef::new(str::from_utf8(unsafe { &iter.value_inner().unwrap() }).unwrap().parse::<u32>().unwrap());
-            terms.insert(Term::from_bytes(&k[1..]), term_ref);
+            let term_id = TermId::new(str::from_utf8(unsafe { &iter.value_inner().unwrap() }).unwrap().parse::<u32>().unwrap());
+            terms.insert(Term::from_bytes(&k[1..]), term_id);
 
             iter.next();
         }
 
         Ok(TermDictionaryManager {
-            next_term_ref: AtomicUsize::new(next_term_ref as usize),
+            next_term_id: AtomicUsize::new(next_term_id as usize),
             terms: RwLock::new(terms),
             write_lock: Mutex::new(0),
         })
     }
 
-    /// Retrieves the TermRef for the given term
-    pub fn get(&self, term: &Term) -> Option<TermRef> {
+    /// Retrieves the TermId for the given term
+    pub fn get(&self, term: &Term) -> Option<TermId> {
         self.terms.read().unwrap().get(term).cloned()
     }
 
     /// Iterates over terms in the dictionary which match the selector
-    pub fn select(&self, term_selector: &MultiTermSelector) -> Vec<TermRef> {
+    pub fn select(&self, term_selector: &MultiTermSelector) -> Vec<TermId> {
         self.terms.read().unwrap().iter()
-            .filter(|&(term, _term_ref)| {
+            .filter(|&(term, _term_id)| {
                 term_selector.matches(term)
             })
-            .map(|(_term, term_ref)| *term_ref)
+            .map(|(_term, term_id)| *term_id)
             .collect()
     }
 
-    /// Retrieves the TermRef for the given term, adding the term to the
+    /// Retrieves the TermId for the given term, adding the term to the
     /// dictionary if it doesn't exist
-    pub fn get_or_create(&self, db: &DB, term: &Term) -> Result<TermRef, rocksdb::Error> {
-        if let Some(term_ref) = self.get(term) {
-            return Ok(term_ref);
+    pub fn get_or_create(&self, db: &DB, term: &Term) -> Result<TermId, rocksdb::Error> {
+        if let Some(term_id) = self.get(term) {
+            return Ok(term_id);
         }
 
         // Term doesn't exist in the term dictionary
 
-        // Increment next_term_ref
-        let next_term_ref = self.next_term_ref.fetch_add(1, Ordering::SeqCst) as u32;
-        try!(db.put(b".next_term_ref", (next_term_ref + 1).to_string().as_bytes()));
+        // Increment next_term_id
+        let next_term_id = self.next_term_id.fetch_add(1, Ordering::SeqCst) as u32;
+        try!(db.put(b".next_term_id", (next_term_id + 1).to_string().as_bytes()));
 
         // Create term ref
-        let term_ref = TermRef::new(next_term_ref);
+        let term_id = TermId::new(next_term_id);
 
         // Get write lock
         // Note: We have a separate lock so we don't need to keep an exclusive
@@ -108,18 +108,18 @@ impl TermDictionaryManager {
 
         // It's possible that another thread has written the term to the dictionary
         // since we checked earlier. If this is the case, We should forget about
-        // writing our TermRef and use the one that has been inserted already.
-        if let Some(term_ref) = self.terms.read().unwrap().get(term) {
-            return Ok(*term_ref);
+        // writing our TermId and use the one that has been inserted already.
+        if let Some(term_id) = self.terms.read().unwrap().get(term) {
+            return Ok(*term_id);
         }
 
         // Write it to the on-disk term dictionary
         let kb = KeyBuilder::term_dict_mapping(term.as_bytes());
-        try!(db.put(kb.key(), next_term_ref.to_string().as_bytes()));
+        try!(db.put(kb.key(), next_term_id.to_string().as_bytes()));
 
         // Write it to the term dictionary
-        self.terms.write().unwrap().insert(term.clone(), term_ref);;
+        self.terms.write().unwrap().insert(term.clone(), term_id);;
 
-        Ok(term_ref)
+        Ok(term_id)
     }
 }
